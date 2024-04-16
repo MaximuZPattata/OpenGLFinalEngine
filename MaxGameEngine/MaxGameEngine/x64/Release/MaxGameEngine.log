@@ -1,0 +1,12 @@
+﻿  cControlGameEngine.cpp
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\minwindef.h(130,1): warning C4005: 'APIENTRY': macro redefinition
+C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\Extern\include\glad\glad.h(32,1): message : see previous definition of 'APIENTRY'
+C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\MaxGameEngine\cControlGameEngine.cpp(676,21): warning C4305: 'return': truncation from 'int' to 'bool'
+C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\MaxGameEngine\cControlGameEngine.cpp(691,17): warning C4305: 'return': truncation from 'int' to 'bool'
+C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\MaxGameEngine\cControlGameEngine.cpp(932,68): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\MaxGameEngine\cControlGameEngine.cpp(932,62): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\MaxGameEngine\cControlGameEngine.cpp(932,57): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\MaxGameEngine\cControlGameEngine.cpp(1130,61): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\MaxGameEngine\cControlGameEngine.cpp(1250,64): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\MaxGameEngine\cControlGameEngine.cpp(1337,66): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
+  MaxGameEngine.vcxproj -> C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\x64\Release\MaxGameEngine.lib

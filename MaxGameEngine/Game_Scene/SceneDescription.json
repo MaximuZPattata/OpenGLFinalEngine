@@ -1,0 +1,106 @@
+{
+	"SceneProperties": [
+		{
+			"SceneNumber": 0,
+			"bMadeIntoFBOTexture" : false,
+			"bMainScene" : true,
+			"CameraAngles": [
+				{
+					"SceneCameraPosition": [0.0, 75.0, 200.0],
+					"SceneCameraTarget":[0.0, 10.0, 0.0]
+				}
+			],
+			"FBOWindowWidth" : 0,
+			"FBOWindowHeight" : 0
+		}	
+	],
+	"ModelProperties": [
+		{
+			"ModelName": "Sphere_01",
+			"FilePath": "Sphere_1_unit_Radius_uv.ply",
+			"Position": [0.0, 0.0, 0.0],
+			"Rotation": [0.0, 0.0, 0.0],
+			"Scale": 10.0,
+			"bApplyBones": false,
+			"bMeshLightsOn": false,
+			"bWireframeModeOn": false,
+			"bUseManualColors": true,
+			"bUseTextures": false,
+			"bIsSkyBox":true,
+			"Color": [0.5, 0.5, 0.5],
+			"SceneId": 0
+		},
+		{
+			"ModelName": "Ground",
+			"FilePath": "Flat_10x10_plane_n_rgba_uv.ply",
+			"Position": [0.0, 0.0, 0.0],
+			"Rotation": [0.0, 0.0, 0.0],
+			"Scale": 50.0,
+			"bApplyBones": false,
+			"bMeshLightsOn": true,
+			"bWireframeModeOn": false,
+			"bUseManualColors": false,
+			"bIsSkyBox":false,
+			"bUseTextures": true,
+			"TextureDetails": [
+				{
+					"bTextureBlend": false,
+					"bUseDiscardMask": false,
+					"DiscardMaskTexturePath": " ",
+					"TexturePath": "Blank_UV_Text_Texture.bmp",
+					"TextureName": "Checkered_Tiles"
+				}
+			],
+			"Color": [0.7, 0.7, 0.7],
+			"SceneId": 0
+		},
+		{
+			"ModelName": "Vampire",
+			"FilePath": "Vampire_Model.dae",
+			"Position": [0.0, 0.0, 0.0],
+			"Rotation": [0.0, 0.0, 0.0],
+			"Scale": 0.1,
+			"bApplyBones": true,
+			"bMeshLightsOn": true,
+			"bWireframeModeOn": false,
+			"bUseManualColors": false,
+			"bIsSkyBox":false,
+			"bUseTextures": true,
+			"Color": [0.1, 0.1, 0.85],
+			"TextureDetails": [
+				{
+					"bTextureBlend": false,
+					"bUseDiscardMask": false,
+					"DiscardMaskTexturePath": " ",
+					"TexturePath": "Vampire_diffuse.bmp",
+					"TextureName": "Vampire_Costume"
+				}
+			],
+			"SceneId": 0
+		}
+	],
+	"CubeMapProperties": {
+		"MapName": "NightSky",
+		"MapTexturePath": { 
+			"LeftTexture": "SpaceBox_left2_negX.bmp",
+			"RightTexture":"SpaceBox_right1_posX.bmp",
+			"TopTexture": "SpaceBox_top3_posY.bmp",
+			"DownTexture": "SpaceBox_bottom4_negY.bmp",
+			"FrontTexture": "SpaceBox_front5_posZ.bmp", 
+			"BackTexture": "SpaceBox_back6_negZ.bmp"
+		}
+	},
+	"LightProperties": [
+		{
+			"bLightOff": false, 
+			"LightType": 2.0,
+			"LinearAttenuation": 0.1,
+			"QuadraticAttenuation": 0.0,
+			"InnerAngle": 0.50,
+			"OuterAngle": 1.0,
+			"LightPosition": [0.0, 30.0, 0.0],
+			"LightDirection": [0.0, -1.0, 0.0],
+			"LightColor": [1.0, 1.0, 1.0]
+		}
+	]
+}
