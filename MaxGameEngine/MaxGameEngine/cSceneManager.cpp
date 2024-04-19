@@ -1,6 +1,8 @@
+#include "pch.h"
 #include "cSceneManager.h"
 
 #include <algorithm>
+#include <thread>
 
 void cSceneManager::InitializeSceneManager(cVAOManager* newVAOManager, cBasicTextureManager* newTextureManager, cCubeMap* newCubeManager, cLightManager* newLightManager)
 {
@@ -10,7 +12,7 @@ void cSceneManager::InitializeSceneManager(cVAOManager* newVAOManager, cBasicTex
     this->mLightManager = newLightManager;
 }
 
-void cSceneManager::LoadScene(GLuint shaderProgramID, GLFWwindow* window, glm::vec3 mainCameraPosition, glm::vec3 mainCameraTarget, bool isFreeFlowCam)
+void cSceneManager::LoadScene(GLuint shaderProgramID, GLFWwindow* window, std::vector <cMesh*> &MeshList, glm::vec3 mainCameraPosition, glm::vec3 mainCameraTarget, bool isFreeFlowCam, bool applyLOD)
 {
     glUseProgram(shaderProgramID);
 
@@ -93,45 +95,17 @@ void cSceneManager::LoadScene(GLuint shaderProgramID, GLFWwindow* window, glm::v
             GLint matView_UL = glGetUniformLocation(shaderProgramID, "matView");
             glUniformMatrix4fv(matView_UL, 1, GL_FALSE, glm::value_ptr(matView));
 
-            //------------------------------Draw Scene objects----------------------------------------
+            //------------------------------Draw Scene objects--------------------------------------------
 
-            cMesh* skyBox = NULL;
+            //this->ProcessMeshesInParallel(shaderProgramID, currentCamEye, currentCamTarget, , currentScene, width, height, applyLOD);
 
-            // Sorts the TotalMeshList based on distance between camera position and mesh object positions 
-            if (currentScene->bSceneHasTransparencyMesh)
-                SortMeshesBasedOnTransparency(currentCamEye, currentCamTarget, currentScene->sceneMeshList);
-
-            for (unsigned int index = 0; index != currentScene->sceneMeshList.size(); index++)
-            {
-                cMesh* currentMesh = currentScene->sceneMeshList[index];
-
-                if (currentMesh->bIsSkyBox && !currentScene->bSceneHasTransparencyMesh)
-                    skyBox = currentMesh;
-                else
-                {
-                    if (currentMesh->bIsVisible)
-                    {
-                        if (!currentMesh->bIsSkyBox)
-                        {
-                            glm::mat4 matModel = glm::mat4(1.0f);
-
-                            this->DrawSceneObject(currentMesh, matModel, shaderProgramID, width, height, currentMesh->bIsSoftBody);
-                        }
-                        else
-                            this->DrawSkyBox(currentMesh, shaderProgramID, currentCamEye, width, height);
-                    }
-                }
-
-                // This is to draw skyBox at the last if there are no transparent objects in the 3D world
-                if (index == currentScene->sceneMeshList.size() - 1 && skyBox != NULL)
-                    this->DrawSkyBox(skyBox, shaderProgramID, currentCamEye, width, height);
-            }
-
+            ProcessMeshesInParallel(MeshList, currentScene->sceneID, currentCamEye, currentCamTarget, applyLOD, shaderProgramID, width, height, currentScene);
+            
             //-----------------------------Draw Debug Objects---------------------------------------------
 
             for (int index = 0; index < currentScene->sceneDebugMeshList.size(); index++)
             {
-                std::vector<glm::vec3> spherePositions = mDebugRenderManager->GetSphereModelPositions(currentScene->sceneDebugMeshList[index]->friendlyName);
+                std::vector<glm::vec3> spherePositions = mDebugRenderManager->GetSphereModelPositions(currentScene->sceneDebugMeshList[index]->meshUniqueName);
 
                 for (int count = 0; count < spherePositions.size(); count++)
                 {
@@ -145,7 +119,142 @@ void cSceneManager::LoadScene(GLuint shaderProgramID, GLFWwindow* window, glm::v
     }
 }
 
-void cSceneManager::SortMeshesBasedOnTransparency(glm::vec3 currentCamPos, glm::vec3 currentCamTarget, std::vector < cMesh* > currentSceneMeshList)
+DWORD WINAPI ProcessMeshList(LPVOID lpParameter)
+{
+    auto params = static_cast<std::tuple<std::vector<cMesh*>&, int, int, int, glm::vec3&, glm::vec3&, bool, GLuint, int, int, cSceneManager::sSceneDetails*, cSceneManager*>*>(lpParameter);
+
+    auto& MeshList = std::get<0>(*params);
+    int startIndex = std::get<1>(*params);
+    int endIndex = std::get<2>(*params);
+    int sceneID = std::get<3>(*params);
+    glm::vec3& currentCamEye = std::get<4>(*params);
+    glm::vec3& currentCamTarget = std::get<5>(*params);
+    bool applyLOD = std::get<6>(*params);
+    GLuint shaderProgramID = std::get<7>(*params);
+    int width = std::get<8>(*params);
+    int height = std::get<9>(*params);
+    cSceneManager::sSceneDetails* currentScene = std::get<10>(*params);
+    cSceneManager* sceneManager = std::get<11>(*params);
+
+    cMesh* skyBox = nullptr;
+
+    for (int index = startIndex; index < endIndex; ++index)
+    {
+        cMesh* currentMesh = MeshList[index];
+
+        if (currentMesh->sceneId == sceneID)
+        {
+            // Check for LOD
+            if (applyLOD && currentMesh->bUseLOD && !currentMesh->CheckForLOD(currentCamEye))
+                continue;
+
+            // Check for SkyBox
+            if (currentMesh->bIsSkyBox && !currentScene->bSceneHasTransparencyMesh)
+                skyBox = currentMesh;
+            else if (currentMesh->bIsVisible)
+            {
+                if (!currentMesh->bIsSkyBox)
+                {
+                    glm::mat4 matModel = glm::mat4(1.0f);
+                    sceneManager->DrawSceneObject(currentMesh, matModel, shaderProgramID, width, height, currentMesh->bIsSoftBody);
+                }
+                else
+                    sceneManager->DrawSkyBox(currentMesh, shaderProgramID, currentCamEye, width, height);
+            }
+        }
+    }
+
+    return 0;
+}
+
+void cSceneManager::ProcessMeshesInParallel(std::vector<cMesh*>& MeshList, int sceneID, glm::vec3& currentCamEye, glm::vec3& currentCamTarget, bool applyLOD, 
+    GLuint shaderProgramID, int width, int height, sSceneDetails* currentScene)
+{
+    int numMeshes = static_cast<int>(MeshList.size());
+    int halfNumMeshes = numMeshes / 2;
+
+    auto params1 = std::make_tuple(std::ref(MeshList), 0, halfNumMeshes, sceneID, std::ref(currentCamEye), std::ref(currentCamTarget),
+        applyLOD, shaderProgramID, width, height, currentScene, this);
+
+    auto params2 = std::make_tuple(std::ref(MeshList), halfNumMeshes, numMeshes, sceneID, std::ref(currentCamEye), std::ref(currentCamTarget),
+        applyLOD, shaderProgramID, width, height, currentScene, this);
+
+    HANDLE thread1 = CreateThread(NULL, 0, ProcessMeshList, &params1, 0, NULL);
+    HANDLE thread2 = CreateThread(NULL, 0, ProcessMeshList, &params2, 0, NULL);
+
+    WaitForSingleObject(thread1, INFINITE);
+    WaitForSingleObject(thread2, INFINITE);
+
+    CloseHandle(thread1);
+    CloseHandle(thread2);
+}
+
+//void cSceneManager::ProcessMeshDrawList(GLuint shaderProgramID, glm::vec3& currentCamEye, glm::vec3& currentCamTarget, std::vector<cMesh*>& MeshList, sSceneDetails* currentScene, int startIndex, int endIndex, float width, float height, bool applyLOD)
+//{
+//    cMesh* skyBox = NULL;
+//
+//    // Sorts the TotalMeshList based on distance between camera position and mesh object positions 
+//    if (currentScene->bSceneHasTransparencyMesh)
+//        SortMeshesBasedOnTransparency(currentScene->sceneID, currentCamEye, currentCamTarget, MeshList);
+//
+//    for (unsigned int index = startIndex; index != endIndex; index++)
+//    {
+//        if (MeshList[index]->sceneId == currentScene->sceneID)
+//        {
+//            cMesh* currentMesh = MeshList[index];
+//
+//            // Check for LOD
+//            if (applyLOD)
+//            {
+//                if (currentMesh->bUseLOD)
+//                {
+//                    if (!currentMesh->CheckForLOD(currentCamEye))
+//                        continue;
+//                }
+//            }
+//
+//            // Check for SkyBox
+//            if (currentMesh->bIsSkyBox && !currentScene->bSceneHasTransparencyMesh)
+//                skyBox = currentMesh;
+//            else
+//            {
+//                if (currentMesh->bIsVisible)
+//                {
+//                    if (!currentMesh->bIsSkyBox)
+//                    {
+//                        glm::mat4 matModel = glm::mat4(1.0f);
+//
+//                        this->DrawSceneObject(currentMesh, matModel, shaderProgramID, width, height, currentMesh->bIsSoftBody);
+//                    }
+//                    else
+//                        this->DrawSkyBox(currentMesh, shaderProgramID, currentCamEye, width, height);
+//                }
+//            }
+//
+//            // This is to draw skyBox at the last if there are no transparent objects in the 3D world
+//            if (index == MeshList.size() - 1 && skyBox != NULL)
+//                this->DrawSkyBox(skyBox, shaderProgramID, currentCamEye, width, height);
+//        }
+//    }
+//}
+//
+////Function to divide the mesh list and process it using threads
+//void cSceneManager::ProcessMeshesInParallel(GLuint shaderProgramID, glm::vec3& currentCamEye, glm::vec3& currentCamTarget, std::vector<cMesh*>& MeshList, sSceneDetails* currentScene, float width, float height, bool applyLOD)
+//{
+//    int numMeshes = static_cast<int>(MeshList.size());
+//    int halfNumMeshes = numMeshes / 2;
+//
+//    std::thread thread1(ProcessMeshDrawList, std::ref(currentCamEye), std::ref(currentCamTarget), std::ref(MeshList), currentScene, 
+//        0, halfNumMeshes, width, height, applyLOD);
+//   
+//    std::thread thread2(ProcessMeshDrawList, std::ref(currentCamEye), std::ref(currentCamTarget), std::ref(MeshList), currentScene, 
+//        halfNumMeshes, numMeshes, width, height, applyLOD);
+// 
+//    thread1.join();
+//    thread2.join();
+//}
+
+void cSceneManager::SortMeshesBasedOnTransparency(unsigned int currentSceneId, glm::vec3 currentCamPos, glm::vec3 currentCamTarget, std::vector < cMesh* >& MeshList)
 {
     glm::vec3 cameraPos = currentCamPos;
     glm::vec3 cameraPerspective = currentCamTarget;
@@ -156,14 +265,14 @@ void cSceneManager::SortMeshesBasedOnTransparency(glm::vec3 currentCamPos, glm::
     // Making position of skyBox 5'000.0f away from the view of the camera
     glm::vec3 skyBoxPos = cameraPos + offsetVal * cameraDirection;
 
-    std::sort(currentSceneMeshList.begin(), currentSceneMeshList.end(), [cameraPos, skyBoxPos](cMesh* mesh1, cMesh* mesh2) {
-
-        if (mesh1->bIsSkyBox)
-            return (glm::distance(skyBoxPos, cameraPos) > glm::distance(mesh2->drawPosition, cameraPos));
-        else if (mesh2->bIsSkyBox)
-            return (glm::distance(mesh1->drawPosition, cameraPos) > glm::distance(skyBoxPos, cameraPos));
-        else
-            return (glm::distance(mesh1->drawPosition, cameraPos) > glm::distance(mesh2->drawPosition, cameraPos));
+    std::sort(MeshList.begin(), MeshList.end(), [cameraPos, skyBoxPos](cMesh* mesh1, cMesh* mesh2)
+        {
+                if (mesh1->bIsSkyBox)
+                    return (glm::distance(skyBoxPos, cameraPos) > glm::distance(mesh2->drawPosition, cameraPos));
+                else if (mesh2->bIsSkyBox)
+                    return (glm::distance(mesh1->drawPosition, cameraPos) > glm::distance(skyBoxPos, cameraPos));
+                else
+                    return (glm::distance(mesh1->drawPosition, cameraPos) > glm::distance(mesh2->drawPosition, cameraPos));
         });
 }
 
@@ -501,16 +610,13 @@ void cSceneManager::DrawSceneObject(cMesh* currentMesh, glm::mat4 matModelParent
     GLint aplhaTransparency_UL = glGetUniformLocation(shaderProgramID, "alphaTransparency");
     glUniform1f(aplhaTransparency_UL, currentMesh->alphaTransparency);
 
-    //-------------------------Find Model Info and Draw----------------------------------------
+    //--------------------------------Draw Model-----------------------------------------------
 
-    sModelDrawInfo modelInfo;
+    sModelDrawInfo& modelInfo = *currentMesh->modelDrawInfo;
 
-    if (this->mSceneVAOManager->FindDrawInfoByModelName(currentMesh->friendlyName, modelInfo))
-    {
-        glBindVertexArray(modelInfo.VAO_ID);
-        glDrawElements(GL_TRIANGLES, modelInfo.numberOfIndices, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-    }
+    glBindVertexArray(modelInfo.VAO_ID);
+    glDrawElements(GL_TRIANGLES, modelInfo.numberOfIndices, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
 
     //------------------------------Remove Scaling---------------------------------------------
 
@@ -552,13 +658,13 @@ void cSceneManager::DrawSkyBox(cMesh* skyBox, GLuint shaderProgramID, glm::vec3(
     glCullFace(GL_BACK);
 }
 
-void cSceneManager::CheckTransparency(unsigned int meshSceneId)
+void cSceneManager::CheckTransparency(unsigned int meshSceneId, std::vector < cMesh* >& MeshList)
 {
     bool transparencyFlag = false;
 
-    for (int index = 0; index < this->mSceneDetailsList[meshSceneId]->sceneMeshList.size(); index++)
+    for (int index = 0; index < MeshList.size(); index++)
     {
-        cMesh* currentMesh = this->mSceneDetailsList[meshSceneId]->sceneMeshList[index];
+        cMesh* currentMesh = MeshList[index];
 
         if (currentMesh->alphaTransparency < 1.0f)
         {
@@ -631,22 +737,6 @@ void cSceneManager::ConvertSceneToFBOTexture(unsigned int sceneId, unsigned int 
 
         std::cout << "SCENE CONVERTED TO FBO TEXTURE SUCCESSFULLY | SCENE ID : " << selectedScene->sceneID << " | FBO ID :" << FBOIndex << std::endl;
     }
-}
-
-void cSceneManager::AddMeshToScene(unsigned int sceneId, cMesh* sceneMesh)
-{
-    if (sceneId < 0 || sceneId >= this->mSceneDetailsList.size())
-    {
-        std::cout << "ERROR : COULDN'T ADD MESH | SCENE ID PROVIDED DOES NOT MATCH" << std::endl;
-
-        return;
-    }
-
-    sSceneDetails* selectedScene = this->mSceneDetailsList[sceneId];
-
-    selectedScene->sceneMeshList.push_back(sceneMesh);
-
-    std::cout << "MESH ADDED TO SCENE SUCCESSFULLY | MESH NAME : " << sceneMesh->meshName << " | SCENE ID : " << selectedScene->sceneID << std::endl;
 }
 
 void cSceneManager::AddDebugMeshToScene(unsigned int sceneId, cMesh* debugMesh, cDebugRenderer* debugRenderManager)

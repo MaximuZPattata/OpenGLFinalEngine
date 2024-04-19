@@ -86,5 +86,29 @@ void cMesh::setDrawOrientationQuaternion(const glm::quat& newOrientation)
 	return;
 }
 
+bool cMesh::CheckForLOD(glm::vec3 cameraPosition)
+{
+	float distanceBetweenMeshAndCamEye = glm::distance(cameraPosition, this->drawPosition);
+	float minimumDistance = FLT_MAX;
+
+	bool isWithinDrawRange = false;
+
+	for (sLevelOfDetail& meshLOD : this->mLODList) // If it's within the LOD range it will draw high/low res models
+	{
+		if (meshLOD.minimumDistanceForLOD <= minimumDistance)
+		{
+			if (distanceBetweenMeshAndCamEye < meshLOD.minimumDistanceForLOD)
+			{
+				this->modelDrawInfo = meshLOD.modelLODDrawInfo;
+
+				minimumDistance = meshLOD.minimumDistanceForLOD;
+
+				isWithinDrawRange = true;
+			}
+		}
+	}
+
+	return isWithinDrawRange;
+}
 
 

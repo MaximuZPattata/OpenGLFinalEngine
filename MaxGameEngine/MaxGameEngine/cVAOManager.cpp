@@ -1,31 +1,34 @@
+#include "pch.h"
 #include "cVAOManager.h"
-
-#include "../OpenGLCommon.h"
-
-#include <glm/vec3.hpp>
-#include <glm/vec4.hpp>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include <vector>
-#include <sstream>
-#include <fstream>
-
-void cVAOManager::setBasePath(std::string basePathWithoutSlash)
+void cVAOManager::setBaseModelPath(std::string basePathWithoutSlash)
 {
-    this->m_basePathWithoutSlash = basePathWithoutSlash;
+    this->mBaseModelPath = basePathWithoutSlash;
     return;
+}
+
+void cVAOManager::setBaseAnimationPath(std::string basePathWithoutSlash)
+{
+    this->mBaseAnimationPath = basePathWithoutSlash;
+    return;
+}
+
+std::string cVAOManager::getBaseModelPath()
+{
+    return this->mBaseModelPath;
 }
 
 bool cVAOManager::LoadModelIntoVAO(std::string friendlyName, std::string fileName, sModelDrawInfo& drawInfo, unsigned int shaderProgramID, bool bIsDynamicBuffer)
 {
     drawInfo.meshFileName = fileName;
 
-    drawInfo.friendlyName = friendlyName;
+    drawInfo.modelUniqueName = friendlyName;
 
-    std::string fileAndPath = this->m_basePathWithoutSlash + "/" + fileName;
+    std::string fileAndPath = this->mBaseModelPath + "/" + fileName;
 
     if (!this->m_LoadTheFile(fileAndPath, drawInfo))
         return false;
@@ -87,7 +90,7 @@ bool cVAOManager::LoadModelIntoVAO(std::string friendlyName, std::string fileNam
     glDisableVertexAttribArray(vBoneIds_location);
     glDisableVertexAttribArray(vBoneWeights_location);
 
-    this->m_map_ModelName_to_VAOID[drawInfo.friendlyName] = drawInfo;
+    this->m_map_ModelName_to_VAOID[drawInfo.modelUniqueName] = drawInfo;
 
     return true;
 }
@@ -107,7 +110,7 @@ bool cVAOManager::m_LoadTheFile(std::string fileName, sModelDrawInfo& drawInfo)
 {
     Assimp::Importer importer;
 
-    const aiScene* scene = importer.ReadFile(fileName, aiProcess_ValidateDataStructure);
+    const aiScene* scene = importer.ReadFile(fileName, aiProcess_ValidateDataStructure | aiProcess_GenNormals | aiProcess_Triangulate | aiProcess_PopulateArmatureData);
 
     if (!scene)
         return false;
@@ -196,7 +199,7 @@ bool cVAOManager::m_LoadTheFile(std::string fileName, sModelDrawInfo& drawInfo)
             std::string name(bone->mName.C_Str(), bone->mName.length);
             drawInfo.BoneNameToIdMap.insert(std::pair<std::string, int>(name, drawInfo.BoneInfoList.size()));
 
-            // Store the offset matrices
+            // Storing the offset matrices
             BoneInfo info;
 
             drawInfo.AssimpToGLM(bone->mOffsetMatrix, info.BoneOffset);
@@ -229,7 +232,7 @@ bool cVAOManager::LoadAnimationIntoModel(sModelDrawInfo& modelInfo, std::string 
 {
     Assimp::Importer importer;
 
-    std::string filePath = this->m_basePathWithoutSlash + "/" + fileName;
+    std::string filePath = this->mBaseAnimationPath + "/" + fileName;
 
     const aiScene* scene = importer.ReadFile(filePath, aiProcess_ValidateDataStructure | aiProcess_GenNormals | aiProcess_Triangulate);
 

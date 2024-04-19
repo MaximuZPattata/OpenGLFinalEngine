@@ -6,6 +6,7 @@
 #include "sPlayerAttributes.h"
 #include "sMouseAttributes.h"
 #include "cAnimationSystem.h"
+#include "cMap.h"
 
 #include <cControlGameEngine.h>
 
@@ -23,6 +24,7 @@ cJsonWriter jsonWriter;
 sCubeMapDetailsFromFile cubeMapDetails;
 sPlayerAttributes playerAttributes;
 sMouseAttributes mouseAttributes;
+cMap mazeCreator;
 cHiResTimer* timer = new cHiResTimer(60);
 
 std::vector<sSceneDetailsFromFile> sceneDetailsList; 
@@ -30,13 +32,8 @@ std::vector<sModelDetailsFromFile> modelDetailsList;
 std::vector<sLightDetailsFromFile> lightDetailsList;
 std::vector<sPhysicsDetailsFromFile> physicsDetailsList;
 
-const float POSITION_OFFSET = 0.0f;
-
-extern void CreateAllSoftBodies(cControlGameEngine& engineManager);
-extern void CreateThreadedSoftBodies(cControlGameEngine& gameEngine);
-extern void CreateFBOScene(cControlGameEngine& gameEngine);
-
 void UpdatePerFrame();
+bool InitializeGameAttributes();
 
 int main()
 {
@@ -106,7 +103,7 @@ int main()
                     glm::vec3 camPos = sceneDetailsList[index].sceneCameraPositionList[0];
                     glm::vec3 camTarget = sceneDetailsList[index].sceneCameraTargetList[0];
 
-                    gameEngine.MoveCameraPosition(camPos.x + POSITION_OFFSET, camPos.y + POSITION_OFFSET, camPos.z + POSITION_OFFSET);
+                    gameEngine.MoveCameraPosition(camPos.x, camPos.y, camPos.z);
                 }
             }
 
@@ -124,10 +121,15 @@ int main()
 
             //---------------------------Load Models with position----------------------------------------------------------------------
 
-            gameEngine.LoadModelsInto3DSpace(modelDetailsList[index].modelFilePath, modelName, modelDetailsList[index].modelPosition.x + POSITION_OFFSET,
-                modelDetailsList[index].modelPosition.y + POSITION_OFFSET, modelDetailsList[index].modelPosition.z + POSITION_OFFSET);
+            gameEngine.LoadModelsInto3DSpace(modelDetailsList[index].modelFilePath, modelName, modelDetailsList[index].modelPosition.x,
+                modelDetailsList[index].modelPosition.y, modelDetailsList[index].modelPosition.z);
 
-            //---------------------------------Rotate Models-----------------------------------------------------------------------------
+            //--------------------------------Adding LOD Info---------------------------------------------------------------------------
+              
+            if (modelDetailsList[index].useLOD)
+                gameEngine.AddLODToMesh(modelName, modelDetailsList[index].fileNameLOD, modelDetailsList[index].minimumDistanceLOD, modelDetailsList[index].isDefaultLOD);
+
+            //---------------------------------Rotate Models----------------------------------------------------------------------------
 
             if (modelDetailsList[index].modelOrientation.x != 0.f)
             {
@@ -217,7 +219,7 @@ int main()
 
             //--------------------------------Add Model into Scene--------------------------------------------------------------------------
 
-            gameEngine.AddMeshToExistingScene(modelDetailsList[index].meshSceneId, modelDetailsList[index].modelName);
+            gameEngine.SetMeshSceneId(modelDetailsList[index].modelName, modelDetailsList[index].meshSceneId);
 
             //-----------------------------------Adding Physics------------------------------------------------------------------------------
 
@@ -270,30 +272,12 @@ int main()
     else
         return -1;
 
-    //-------------------------Loading animation onto mesh----------------------------------
+    //-------------------------------Initialize Game-----------------------------------------
 
-    std::string playerModelName = "Vampire";
-    std::string runAnimName = "Vampire_Run";
-    std::string walkAnimName = "Vampire_Walk";
-    std::string idleAnimName = "Vampire_Idle";
-    std::string jumpAnimName = "Vampire_Jump";
+    if (!InitializeGameAttributes())
+        return -1;
 
-    gameEngine.LoadAnimationIntoExistingMeshModel(playerModelName, "Run.dae", runAnimName);
-    gameEngine.LoadAnimationIntoExistingMeshModel(playerModelName, "Standard Walk.dae", walkAnimName);
-    gameEngine.LoadAnimationIntoExistingMeshModel(playerModelName, "Jumping.dae", jumpAnimName);
-    gameEngine.LoadAnimationIntoExistingMeshModel(playerModelName, "Breathing_Idle.dae", idleAnimName);
-
-    //------------------------------Creating Scene-------------------------------------------
-
-    //CreateThreadedSoftBodies(gameEngine);
-
-    //CreateAllSoftBodies(gameEngine);
-
-    //CreateFBOScene(gameEngine);
-
-    playerAttributes.InitializePlayer(gameEngine, playerModelName, idleAnimName, walkAnimName, runAnimName, 25.f, 50.f, 10.f, 75.f, mouseAttributes.minZoomDistance);
-
-    //-------------------------------Frame loop----------------------------------------------
+    //-------------------------------Frame Loop----------------------------------------------
 
     const double LARGEST_DELTA_TIME = 1.0f / 30.0f;
     double lastTime = glfwGetTime();
@@ -308,6 +292,8 @@ int main()
 
         ONE_SEC_COUNT += static_cast<float>(gameEngine.deltaTime);
 
+        //std::cout << "FPS Beginning : " << ONE_SEC_COUNT << std::endl;
+
         if (ONE_SEC_COUNT >= 0.99f)
         {
             std::cout << "FPS : " << FPS << " | SECONDS_TAKEN : " << ONE_SEC_COUNT << std::endl;
@@ -317,13 +303,26 @@ int main()
         else
             FPS++;
 
+        //ONE_SEC_COUNT += static_cast<float>(gameEngine.deltaTime);
+        //std::cout << "FPS before per frame update : " << ONE_SEC_COUNT << std::endl;
+
         //------------------Update animations-------------------------------------------------
 
         UpdatePerFrame();
 
+        //ONE_SEC_COUNT += static_cast<float>(gameEngine.deltaTime);
+
+        //std::cout << "FPS after per frame update : " << ONE_SEC_COUNT << std::endl;
+
         //--------------------Run Engine-----------------------------------------------------
 
         gameEngine.RunGameEngine(window);
+
+        //ONE_SEC_COUNT += static_cast<float>(gameEngine.deltaTime);
+
+        //std::cout << "FPS after engine run : " << ONE_SEC_COUNT << std::endl;
+
+        //std::cout << "---------------------------------------------------------------------------------------------------" << std::endl << std::endl;
     }
 
     glfwDestroyWindow(window);
@@ -350,4 +349,35 @@ void UpdatePerFrame()
     playerAttributes.UpdatePlayerState(gameEngine);
 
     gameEngine.UpdateAllAnimations(static_cast <float> (gameEngine.deltaTime));
+}
+
+bool InitializeGameAttributes()
+{
+    //--------------------------------Loading Maze-------------------------------------------
+    
+    if (!mazeCreator.InitializeMap(gameEngine))
+    {
+        std::cout << "ERROR: UNABLE TO INITIALIZE MAP" << std::endl;
+
+        return -1;
+    }
+
+    //-------------------------Loading Animations onto mesh----------------------------------
+
+    std::string playerModelName = "Vampire";
+    std::string runAnimName = "Vampire_Run";
+    std::string walkAnimName = "Vampire_Walk";
+    std::string idleAnimName = "Vampire_Idle";
+    std::string jumpAnimName = "Vampire_Jump";
+
+    gameEngine.LoadAnimationIntoExistingMeshModel(playerModelName, "Run.dae", runAnimName);
+    gameEngine.LoadAnimationIntoExistingMeshModel(playerModelName, "Standard Walk.dae", walkAnimName);
+    gameEngine.LoadAnimationIntoExistingMeshModel(playerModelName, "Jumping.dae", jumpAnimName);
+    gameEngine.LoadAnimationIntoExistingMeshModel(playerModelName, "Breathing_Idle.dae", idleAnimName);
+
+    //------------------------------Initialize Player----------------------------------------
+
+    playerAttributes.InitializePlayer(gameEngine, playerModelName, idleAnimName, walkAnimName, runAnimName, 25.f, 50.f, 10.f, 75.f, mouseAttributes.minZoomDistance);
+
+    return 1;
 }

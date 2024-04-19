@@ -192,7 +192,7 @@ bool cAnimationSystem::AddAnimationCommand(cMesh* animMesh, sModelDrawInfo* anim
 	//------------------Releasing Previous Animation Commands under this Mesh-------------------------------
 
 	if (releasePrevAnimations)
-		this->mAnimationCommandsManager->ReleasePreviousAnimation(animMesh->friendlyName);
+		this->mAnimationCommandsManager->ReleasePreviousAnimation(animMesh->meshUniqueName);
 
 	//------------------------Adding new Animation Commands to this Mesh------------------------------------
 
@@ -203,7 +203,7 @@ bool cAnimationSystem::AddAnimationCommand(cMesh* animMesh, sModelDrawInfo* anim
 			if (this->mAnimationCommandsManager == NULL)
 				this->mAnimationCommandsManager = new cAnimationCommands();
 
-			this->mAnimationCommandsManager->AddAnimation(animMesh->friendlyName, animationName, frameRateIncrement, animationInfo.Duration, animationInfo.TicksPerSecond, animMesh, animModel, animationInfo, loopAnimation);
+			this->mAnimationCommandsManager->AddAnimation(animMesh->meshUniqueName, animationName, frameRateIncrement, animationInfo.Duration, animationInfo.TicksPerSecond, animMesh, animModel, animationInfo, loopAnimation);
 
 			return true;
 		}

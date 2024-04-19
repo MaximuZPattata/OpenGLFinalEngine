@@ -20,8 +20,6 @@ void cHiResTimer::setMaxDelaTime(double newMaxDeltaTime)
 
 double cHiResTimer::getFrameTime(void)
 {
-    //------------New Method---------------------
-
     double currentTime = glfwGetTime();
     double totalDeltaTime = 0.0;
     double averageDeltaTime = 0.0;
@@ -44,19 +42,4 @@ double cHiResTimer::getFrameTime(void)
     averageDeltaTime = totalDeltaTime / (double)this->deltaTimeList.size();
 
     return averageDeltaTime;
-
-    //-------------Old Method--------------------
-
-    /*double currentTime = glfwGetTime();
-
-    double deltaTime = currentTime - mLastTime;
-
-    const double LARGEST_DELTA_TIME = 1.f / 30.0f;
-
-    if (deltaTime > LARGEST_DELTA_TIME)
-        deltaTime = LARGEST_DELTA_TIME;
-
-    mLastTime = currentTime;
-
-    return deltaTime;*/
 }

@@ -34,6 +34,7 @@ struct sModelDetailsFromFile
 	bool applyHeightMap;
 	bool isSkyBox;
 	bool applyBones;
+	bool useLOD;
 
 	std::string modelName;
 	std::string modelFilePath;
@@ -42,10 +43,14 @@ struct sModelDetailsFromFile
 	std::vector <std::string> textureFilePathList;
 	std::vector <std::string> discardMaskTextureFilePath;
 	std::vector <std::string> textureNameList;
+	std::vector <std::string> fileNameLOD;
 
 	std::vector <float> textureRatiosList;
+	std::vector <float> minimumDistanceLOD;
+
 	std::vector <bool> blendTexture;
 	std::vector <bool> useDiscardMaskTexture;
+	std::vector <bool> isDefaultLOD;
 
 	glm::vec3 modelPosition;
 	glm::vec3 modelOrientation;

@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "cDebugRender.h"
 
 cDebugRenderer::cDebugRenderer()
@@ -126,7 +127,7 @@ void cDebugRenderer::UpdateDebugSpherePositions(std::string debugSphereName, std
 
     for (int index = 0; index < mDebugSphereDetailsList.size(); index++)
     {
-        if (mDebugSphereDetailsList[index]->sphereModel->friendlyName == debugSphereName)
+        if (mDebugSphereDetailsList[index]->sphereModel->meshUniqueName == debugSphereName)
         {
             mDebugSphereDetailsList[index]->spherePositionsList.clear();
             mDebugSphereDetailsList[index]->spherePositionsList = positionsList;
@@ -144,7 +145,7 @@ std::vector<glm::vec3> cDebugRenderer::GetSphereModelPositions(std::string debug
 
     for (int index = 0; index < mDebugSphereDetailsList.size(); index++)
     {
-        if (mDebugSphereDetailsList[index]->sphereModel->friendlyName == debugSphereMeshName)
+        if (mDebugSphereDetailsList[index]->sphereModel->meshUniqueName == debugSphereMeshName)
             return mDebugSphereDetailsList[index]->spherePositionsList;
     }
 

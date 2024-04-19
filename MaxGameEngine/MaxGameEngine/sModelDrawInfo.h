@@ -84,8 +84,19 @@ struct sModelDrawInfo
 {
 	sModelDrawInfo();
 
+	// Copy constructor for copying data from already existing sModelDrawInfo instance
+	sModelDrawInfo(const sModelDrawInfo& other)
+	{
+		this->numberOfVertices = other.numberOfVertices;
+		this->pVertices = other.pVertices;
+		this->numberOfIndices = other.numberOfIndices;
+		this->pIndices = other.pIndices;
+		this->numberOfTriangles = other.numberOfTriangles;
+		this->pTriangles = other.pTriangles;
+	}
+
 	std::string meshFileName;
-	std::string friendlyName;
+	std::string modelUniqueName;
 
 	unsigned int VAO_ID;
 	unsigned int VertexBufferID;

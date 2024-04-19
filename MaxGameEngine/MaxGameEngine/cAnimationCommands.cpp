@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "cAnimationCommands.h"
 
 void cAnimationCommands::AddAnimation(std::string meshName, std::string animName, float frameRateIncrement, float animationDuration, float ticksPerSecond,

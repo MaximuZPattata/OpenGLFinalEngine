@@ -13,14 +13,21 @@ struct sMeshTexture
 
 	float heightMapScale = 0.0f;
 
-	int textureUnit;
-	int discardMaskTextureUnit;
+	int textureUnit = 0;
+	int discardMaskTextureUnit = 0;
 
 	std::string texturePath;
 	std::string textureName;
 	std::string discardMaskTexturePath;
 
 	glm::vec2 UVOffset = glm::vec2(0.0f, 0.0f);
+};
+
+struct sLevelOfDetail
+{
+	float minimumDistanceForLOD = 0.f;
+
+	sModelDrawInfo* modelLODDrawInfo;
 };
 
 struct sBlendedTextures
@@ -61,22 +68,23 @@ public:
 	unsigned int FBOTextureNumber;
 	unsigned int sceneId = 0;
 
-	bool bIsVisible;
-	bool bIsWireframe;
-	bool bDoNotLight;
-	bool bUseManualColours;
-	bool bUseTextures;
-	bool bIsSkyBox;
-	bool bIsAABBMesh;
-	bool bIsSoftBody;
-	bool bIsDebugMesh;
-	bool bTextureIsFromFBO;
-	bool bMeshUsesSecondPassFilter;
+	bool bIsVisible = false;
+	bool bIsWireframe = false;
+	bool bDoNotLight = false;
+	bool bUseManualColours = false;
+	bool bUseTextures = false;
+	bool bIsSkyBox = false;
+	bool bIsAABBMesh = false;
+	bool bIsSoftBody = false;
+	bool bIsDebugMesh = false;
+	bool bTextureIsFromFBO = false;
+	bool bMeshUsesSecondPassFilter = false;
 	bool bApplyBones = false;
 	bool bDisplayBoneWeightColor = false;
+	bool bUseLOD = false;
 
-	std::string meshName;
-	std::string friendlyName;
+	std::string meshFileName;
+	std::string meshUniqueName;
 
 	glm::vec3 drawPosition;
 	glm::vec3 drawOrientation;
@@ -84,8 +92,9 @@ public:
 
 	glm::vec4 wholeObjectManualColourRGBA;
 
-	std::vector<cMesh*> mChildMeshesList;
+	std::vector	<cMesh*> mChildMeshesList;
 	std::vector <sMeshTexture> mTextureDetailsList;
+	std::vector <sLevelOfDetail> mLODList;
 
 	std::map<std::string, glm::mat4> mBoneTransformationsMap;
 
@@ -102,6 +111,7 @@ public:
 	void setDrawPosition(const glm::vec3& newPosition);
 	void setDrawOrientation(const glm::quat& newOrientation, glm::vec3 newAngles);
 	void setDrawOrientationQuaternion(const glm::quat& newOrientation);
+	bool CheckForLOD(glm::vec3 cameraPos);
 
 	glm::vec3 getDrawPosition(void);
 	glm::vec3 getDrawOrientation(void);

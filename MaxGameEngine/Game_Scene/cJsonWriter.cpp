@@ -13,7 +13,7 @@ void cJsonWriter::WriteDataToTextFile(cControlGameEngine& gameEngine)
     outputFile << "ALL MESH POSITIONS :" << std::endl << std::endl;
 
     for (cMesh* currentMesh : totalMeshList)
-        outputFile << currentMesh->friendlyName << " : (" << currentMesh->drawPosition.x << ", " << currentMesh->drawPosition.y << ", "
+        outputFile << currentMesh->meshUniqueName << " : (" << currentMesh->drawPosition.x << ", " << currentMesh->drawPosition.y << ", "
         << currentMesh->drawPosition.z << ")" << std::endl << std::endl;
 
     outputFile.close();

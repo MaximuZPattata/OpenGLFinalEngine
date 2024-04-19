@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "sModelDrawInfo.h"
 
 unsigned int sModelDrawInfo::m_nextUniqueID = sModelDrawInfo::FIRST_UNIQUE_ID;

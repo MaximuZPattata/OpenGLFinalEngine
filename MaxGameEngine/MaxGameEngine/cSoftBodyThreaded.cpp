@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "cSoftBodyThreaded.h"
 
 CRITICAL_SECTION updateSoftBodyCriticalSection;

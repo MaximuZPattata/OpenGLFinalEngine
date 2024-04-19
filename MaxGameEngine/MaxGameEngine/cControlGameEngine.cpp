@@ -10,7 +10,7 @@ cMesh* cControlGameEngine::g_pFindMeshByFriendlyName(std::string friendlyNameToF
 {
     for (unsigned int index = 0; index != TotalMeshList.size(); index++)
     {
-        if (TotalMeshList[index]->friendlyName == friendlyNameToFind)
+        if (TotalMeshList[index]->meshUniqueName == friendlyNameToFind)
             return TotalMeshList[index];
     }
 
@@ -21,17 +21,17 @@ cMesh* cControlGameEngine::g_pFindMeshByFriendlyName(std::string friendlyNameToF
     return NULL;
 }
 
-sModelDrawInfo* cControlGameEngine::g_pFindModelInfoByFriendlyName(std::string friendlyNameToFind)
+sModelDrawInfo* cControlGameEngine::g_pFindModelInfoByFriendlyName(std::string modelFilePath)
 {
     for (unsigned int index = 0; index != MeshDrawInfoList.size(); index++)
     {
-        if (MeshDrawInfoList[index]->friendlyName == friendlyNameToFind)
+        if (MeshDrawInfoList[index]->meshFileName == modelFilePath)
         {
             return MeshDrawInfoList[index];
         }
     }
 
-    std::cout << "ERROR : COULDN'T FIND MODEL INFO - MODEL NAME : " << friendlyNameToFind << std::endl;
+    std::cout << "ERROR : COULDN'T FIND MODEL INFO - MODEL NAME : " << modelFilePath << std::endl;
     std::cout << "<<PLEASE CHECK THE MESH NAME IN JSON FILE OR THE MODEL FILE LOCATION FOR THE MODEL>>" << std::endl;
     std::cout << std::endl;
 
@@ -94,78 +94,204 @@ float cControlGameEngine::getRandomFloat(float num1, float num2)
 
 void cControlGameEngine::MoveCameraPosition(float translate_x, float translate_y, float translate_z)
 {
-    cameraEye = glm::vec3(translate_x, translate_y, translate_z);
+     this->mCamManager->mCameraEye = glm::vec3(translate_x, translate_y, translate_z);
 }
 
 void cControlGameEngine::MoveCameraTarget(float translate_x, float translate_y, float translate_z)
 {
-    cameraTarget = glm::vec3(translate_x, translate_y, translate_z);
+     this->mCamManager->mCameraTarget = glm::vec3(translate_x, translate_y, translate_z);
 }
 
 void cControlGameEngine::ShiftCameraView()
 {
-    bFreeFlowCamera = !bFreeFlowCamera;
+    this->mCamManager->bFreeFlowCamera = !this->mCamManager->bFreeFlowCamera;
 }
 
 void cControlGameEngine::UpdateThirdPersonCamera(const glm::vec3& playerPosition, float playerYaw, float playerPitch)
 {
-    if (!this->bFreeFlowCamera)
+    if (!this->mCamManager->bFreeFlowCamera)
     {
-        glm::vec3 cameraOffset(0.0f, this->cameraHeight, this->cameraDistance);
+        glm::vec3 cameraOffset(0.0f, this->mCamManager->mCameraHeight, this->mCamManager->mCameraDistance);
 
         glm::mat4 rotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(playerYaw), glm::vec3(0.0f, 1.0f, 0.0f));
         rotationMatrix = glm::rotate(rotationMatrix, glm::radians(playerPitch), glm::vec3(1.0f, 0.0f, 0.0f));
 
-        this->cameraEye = playerPosition + glm::vec3(rotationMatrix * glm::vec4(cameraOffset, 1.0f));
+        this->mCamManager->mCameraEye = playerPosition + glm::vec3(rotationMatrix * glm::vec4(cameraOffset, 1.0f));
 
-        this->cameraTarget = playerPosition + glm::vec3(0.f, 15.f, 0.f);
+        this->mCamManager->mCameraTarget = playerPosition + glm::vec3(0.f, 15.f, 0.f);
     }
 }
 
 bool cControlGameEngine::IsFreeFlowCamOn()
 {
-    return bFreeFlowCamera;
+    return this->mCamManager->bFreeFlowCamera;
+}
+
+void cControlGameEngine::SetEditorMode(bool editorModeOn)
+{
+    this->mCamManager->bEditorModeOn = editorModeOn;
+}
+
+void cControlGameEngine::SetLightEditorMode(bool lightEditorModeOn)
+{
+    this->mCamManager->bLightEditorMode = lightEditorModeOn;
+}
+
+void cControlGameEngine::SetCamYaw(float yaw)
+{
+    this->mCamManager->mYaw = yaw;
+}
+
+void cControlGameEngine::SetCamPitch(float pitch)
+{
+    this->mCamManager->mPitch = pitch;
+}
+
+void cControlGameEngine::SetCameraHeight(float camHeight)
+{
+    this->mCamManager->mCameraHeight = camHeight;
+}
+
+void cControlGameEngine::SetCameraDistance(float camDistance)
+{
+    this->mCamManager->mCameraDistance = camDistance;
 }
 
 glm::vec3 cControlGameEngine::GetCurrentCameraPosition()
 {
-    return cameraEye;
+    return   this->mCamManager->mCameraEye;
 }
 
 glm::vec3 cControlGameEngine::GetCurrentCameraTarget()
 {
-    return cameraTarget;
+    return  this->mCamManager->mCameraTarget;
+}
+
+bool cControlGameEngine::GetEditorMode()
+{
+    return this->mCamManager->bEditorModeOn;
+}
+
+bool cControlGameEngine::GetLightEditorMode()
+{
+    return this->mCamManager->bLightEditorMode;
+}
+
+float cControlGameEngine::GetCamYaw()
+{
+    return this->mCamManager->mYaw;
+}
+
+float cControlGameEngine::GetCamPitch()
+{
+    return this->mCamManager->mPitch;
+}
+
+float cControlGameEngine::GetCamHeight()
+{
+    return this->mCamManager->mCameraHeight;
+}
+
+float cControlGameEngine::GetCamDistance()
+{
+    return this->mCamManager->mCameraDistance;
 }
 
 //--------------------------------------MESH CONTROLS-----------------------------------------------------------------
 
+void cControlGameEngine::InitializeMeshCount()
+{
+    this->TotalMeshList.reserve(this->TOTAL_MESH_COUNT);
+}
+
+sModelDrawInfo* cControlGameEngine::CreateModelDrawInfo(std::string fileName, std::string fullFilePath)
+{
+    sModelDrawInfo* newModel = NULL;
+
+    if (!this->IsMeshFilePathAlreadyExisting(fileName))
+    {
+        newModel = new sModelDrawInfo();
+
+        std::string newUniqueModelDrawInfoName = "Model_Info_" + std::to_string(this->getRandomFloat(0.0, 9999.9)) + "_" + fileName;
+
+        if (!this->mVAOManager->LoadModelIntoVAO(newUniqueModelDrawInfoName, fileName, *newModel, shaderProgramID))
+        {
+            std::cout << "ERROR : UNABLE TO LOAD MODEL INFO - FILE NAME : " << fileName << std::endl;
+            return NULL;
+        }
+
+        this->MeshDrawInfoList.push_back(newModel);
+        this->MeshFilePathList.push_back(fileName);
+    }
+    else
+    {
+        for (sModelDrawInfo* existingModel : this->MeshDrawInfoList)
+        {
+            if (fullFilePath == existingModel->meshFileName)
+            {
+                newModel = existingModel;
+
+                break;
+            }
+        }
+    }
+
+    return newModel;
+}
+
 void cControlGameEngine::LoadModelsInto3DSpace(std::string filePath, std::string modelName, float initial_x, float initial_y, float initial_z)
 {
-    sModelDrawInfo* newModel = new sModelDrawInfo;
+    //--------------------------Checking if the mesh file path is already loaded by the engine--------------------------------------
+
+    std::string fullFilePath = this->mVAOManager->getBaseModelPath() + "/" + filePath;
+
+    sModelDrawInfo* modelDrawInfo = CreateModelDrawInfo(filePath, fullFilePath);
+
+    if (modelDrawInfo == NULL)
+        return;
+
+    //------------------------------------------Creating new mesh model-------------------------------------------------------------
 
     cMesh* newMesh = new cMesh();
 
-    bool result = mVAOManager->LoadModelIntoVAO(modelName, filePath, *newModel, shaderProgramID);
+    newMesh->meshFileName = fullFilePath;
 
-    if (!result)
-    {
-        std::cout << "Cannot load model - " << modelName << std::endl;
-        return;
-    }
-
-    MeshDrawInfoList.push_back(newModel);
-
-    newMesh->meshName = filePath;
-
-    newMesh->friendlyName = modelName;
+    newMesh->meshUniqueName = modelName;
 
     newMesh->drawPosition = glm::vec3(initial_x, initial_y, initial_z);
 
-    newMesh->modelDrawInfo = newModel;
+    newMesh->modelDrawInfo = modelDrawInfo;
 
-    std::cout << "Loaded: " << newMesh->friendlyName << " | Vertices : " << newModel->numberOfVertices << std::endl;
+    this->TotalMeshList.push_back(newMesh);
+}
 
-    TotalMeshList.push_back(newMesh);
+void cControlGameEngine::AddLODToMesh(std::string meshName, std::vector <std::string> filePathLOD, std::vector <float> minimumDistance, std::vector <bool> isDefaultLOD)
+{
+    cMesh* meshFound = this->g_pFindMeshByFriendlyName(meshName);
+
+    meshFound->bUseLOD = true;
+
+    for (int count = 0; count < filePathLOD.size(); count++)
+    {
+        sLevelOfDetail newLOD;
+
+        //--------------------------Checking if the mesh file path is already loaded by the engine--------------------------------------
+
+        std::string fullFilePath = this->mVAOManager->getBaseModelPath() + "/" + filePathLOD[count];
+
+        sModelDrawInfo* modelDrawInfo = CreateModelDrawInfo(filePathLOD[count], fullFilePath);
+
+        if (modelDrawInfo == NULL)
+            return;
+
+        //-------------------------------------------Add LOD Details to Mesh------------------------------------------------------------
+        
+        newLOD.modelLODDrawInfo = modelDrawInfo;
+
+        newLOD.minimumDistanceForLOD = minimumDistance[count];
+
+        meshFound->mLODList.push_back(newLOD);
+    }
 }
 
 void cControlGameEngine::ChangeColor(std::string modelName, float r, float g, float b)
@@ -297,16 +423,11 @@ void cControlGameEngine::DeleteMesh(std::string modelName)
 
     sPhysicsProperties* physicalModel = FindPhysicalModelByName(modelName);
 
-    sModelDrawInfo* modelInfo = g_pFindModelInfoByFriendlyName(modelName);
-
     if (meshFound != NULL)
         TotalMeshList.erase(std::remove(TotalMeshList.begin(), TotalMeshList.end(), meshFound), TotalMeshList.end());
 
     if (physicalModel != NULL)
         PhysicsModelList.erase(std::remove(PhysicsModelList.begin(), PhysicsModelList.end(), physicalModel), PhysicsModelList.end());
-
-    if (modelInfo != NULL)
-        MeshDrawInfoList.erase(std::remove(MeshDrawInfoList.begin(), MeshDrawInfoList.end(), modelInfo), MeshDrawInfoList.end());
 }
 
 void cControlGameEngine::ShiftToNextMeshInList()
@@ -351,8 +472,8 @@ void cControlGameEngine::ShiftToPreviousMeshInList()
 
 void cControlGameEngine::SortMeshesBasedOnTransparency()
 {
-    glm::vec3 cameraPos = cameraEye;
-    glm::vec3 cameraPerspective = cameraTarget;
+    glm::vec3 cameraPos =   this->mCamManager->mCameraEye;
+    glm::vec3 cameraPerspective =  this->mCamManager->mCameraTarget;
     glm::vec3 cameraDirection = glm::normalize(cameraPerspective - cameraPos);
 
     float offsetVal = 5'000.0f;
@@ -387,6 +508,24 @@ void cControlGameEngine::ToggleMeshBoneWeightColor(std::string modelName)
 
     if (meshFound->bApplyBones)
         meshFound->bDisplayBoneWeightColor = !meshFound->bDisplayBoneWeightColor;
+}
+
+void cControlGameEngine::SetMeshSceneId(std::string modelName, unsigned int meshSceneId)
+{
+    cMesh* meshFound = this->g_pFindMeshByFriendlyName(modelName);
+
+    meshFound->sceneId = meshSceneId;
+}
+
+bool cControlGameEngine::IsMeshFilePathAlreadyExisting(std::string filePath)
+{
+    for (int index = 0; index < this->MeshFilePathList.size(); index++)
+    {
+        if (filePath == this->MeshFilePathList[index])
+            return true;
+    }
+
+    return false;
 }
 
 cMesh* cControlGameEngine::GetCurrentModelSelected()
@@ -453,7 +592,7 @@ void cControlGameEngine::PlayAnimation(std::string modelName, std::string animat
         std::cout << "ERROR : MODEL NAME NOT RECOGNIZED" << std::endl;
     else
     {
-        animModel = g_pFindModelInfoByFriendlyName(modelName);
+        animModel = g_pFindModelInfoByFriendlyName(animMesh->meshFileName);
 
         if (!this->mAnimationManager->AddAnimationCommand(animMesh, animModel, animationName, frameRateIncrement, loopAnimation, releasePrevAnimationsForThisMesh))
             std::cout << "ERROR : ANIMATION NAME NOT RECOGNIZED" << std::endl;
@@ -462,7 +601,9 @@ void cControlGameEngine::PlayAnimation(std::string modelName, std::string animat
 
 void cControlGameEngine::LoadAnimationIntoExistingMeshModel(std::string existingMeshModelName, std::string fileName, std::string animationName)
 {
-    sModelDrawInfo* modelInfo = g_pFindModelInfoByFriendlyName(existingMeshModelName);
+    cMesh* meshFound = g_pFindMeshByFriendlyName(existingMeshModelName);
+
+    sModelDrawInfo* modelInfo = g_pFindModelInfoByFriendlyName(meshFound->meshFileName);
 
     if (!this->mVAOManager->LoadAnimationIntoModel(*modelInfo, fileName, animationName))
         std::cout << "ERROR : LOADING ANIMATION INTO EXISTING MODEL - " << fileName.c_str() << std::endl;
@@ -512,95 +653,112 @@ void cControlGameEngine::ApplyHeightMap(std::string modelName, std::string textu
 
 void cControlGameEngine::AddTexturesToOverlap(std::string modelName, std::string texturePath, std::string textureName)
 {
-    cMesh* meshFound = g_pFindMeshByFriendlyName(modelName);
+    cMesh* meshTexture = g_pFindMeshByFriendlyName(modelName);
 
-    if (meshFound == NULL)
-        return;
-
-    if (mTextureManager->Create2DTextureFromBMPFile(texturePath, true))
+    if (this->IsTextureAlreadyLoaded(texturePath))
     {
-        std::cout << "Texture loaded successfully - [" << texturePath << "]" << std::endl;
+        if (this->mTextureManager->Create2DTextureFromBMPFile(texturePath, true))
+        {
+            std::cout << "SUCCESS : TEXTURE LOADED - [" << texturePath << "]" << std::endl;
 
-        sMeshTexture newTexture;
+            this->TexturePathList.push_back(texturePath);
+        }
 
-        newTexture.texturePath = texturePath;
-        newTexture.textureName = textureName;
-        newTexture.textureUnit = textureUnitIndex;
+        else
+        {
+            std::cout << "ERROR : LOADING TEXTURE FAILED - [" << texturePath << "]" << std::endl;
 
-        meshFound->mTextureDetailsList.push_back(newTexture);
-
-        // Incrementing the Texture Unit 
-        textureUnitIndex++;
-
-        if (textureUnitIndex >= 30) // Maintaining 30 as the threshold for the Texture Unit count
-            textureUnitIndex = 0;
+            return;
+        }
     }
 
-    else
-        std::cout << "ERROR : Loading texture failed - [" << texturePath << "]" << std::endl;
+    sMeshTexture newTexture;
+
+    newTexture.texturePath = texturePath;
+    newTexture.textureName = textureName;
+    newTexture.textureUnit = textureUnitIndex;
+
+    meshTexture->mTextureDetailsList.push_back(newTexture);
+
+    // Incrementing the Texture Unit 
+    textureUnitIndex++;
+
+    if (textureUnitIndex >= 30) // Maintaining 30 as the threshold for the Texture Unit count
+        textureUnitIndex = 0;
 }
 
 void cControlGameEngine::AddTexturesToTheMix(std::string modelName, std::string texturePath, std::string textureName, float textureRatio)
 { 
-    cMesh* meshFound = g_pFindMeshByFriendlyName(modelName);
+    cMesh* meshTexture = g_pFindMeshByFriendlyName(modelName);
 
-    if (meshFound == NULL)
-        return;
-
-    if (mTextureManager->Create2DTextureFromBMPFile(texturePath, true))
+    if (this->IsTextureAlreadyLoaded(texturePath))
     {
-        std::cout << "Texture loaded successfully - [" << texturePath << "]" << std::endl;
+        if (this->mTextureManager->Create2DTextureFromBMPFile(texturePath, true))
+        {
+            std::cout << "SUCCESS : TEXTURE LOADED - [" << texturePath << "]" << std::endl;
 
-        sMeshTexture newTexture;
+            this->TexturePathList.push_back(texturePath);
+        }
 
-        meshFound->mMixedTextures.texturePathList.push_back(texturePath);
-        meshFound->mMixedTextures.textureNameList.push_back(textureName);
-        meshFound->mMixedTextures.textureUnit.push_back(textureUnitIndex);
-        meshFound->mMixedTextures.textureRatiosList[meshFound->mMixedTextures.textureNameList.size() - 1] = textureRatio;
+        else
+        {
+            std::cout << "ERROR : LOADING TEXTURE FAILED - [" << texturePath << "]" << std::endl;
 
-        // Incrementing the Texture Unit 
-        textureUnitIndex++;
-
-        if (textureUnitIndex >= 30) // Maintaining 30 as the threshold for the Texture Unit count
-            textureUnitIndex = 0;
+            return;
+        }
     }
 
-    else
-        std::cout << "ERROR : Loading texture failed - [" << texturePath << "]" << std::endl;
+    sMeshTexture newTexture;
+
+    meshTexture->mMixedTextures.texturePathList.push_back(texturePath);
+    meshTexture->mMixedTextures.textureNameList.push_back(textureName);
+    meshTexture->mMixedTextures.textureUnit.push_back(textureUnitIndex);
+    meshTexture->mMixedTextures.textureRatiosList[meshTexture->mMixedTextures.textureNameList.size() - 1] = textureRatio;
+
+    // Incrementing the Texture Unit 
+    textureUnitIndex++;
+
+    if (textureUnitIndex >= 30) // Maintaining 30 as the threshold for the Texture Unit count
+        textureUnitIndex = 0;
 }
 
 void cControlGameEngine::AddDiscardMaskTexture(std::string modelName, std::string textureName, std::string discardMaskTexturePath)
 {
-    cMesh* meshFound = g_pFindMeshByFriendlyName(modelName);
+    cMesh* meshTexture = g_pFindMeshByFriendlyName(modelName);
 
-    if (meshFound == NULL)
-        return;
-
-    if (mTextureManager->Create2DTextureFromBMPFile(discardMaskTexturePath, true))
+    if (this->IsTextureAlreadyLoaded(discardMaskTexturePath))
     {
-        std::cout << "Texture loaded successfully - [" << discardMaskTexturePath << "]" << std::endl;
-
-        for (int index = 0; index < meshFound->mTextureDetailsList.size(); index++)
+        if (this->mTextureManager->Create2DTextureFromBMPFile(discardMaskTexturePath, true))
         {
-            if (meshFound->mTextureDetailsList[index].textureName == textureName)
-            {
-                meshFound->mTextureDetailsList[index].discardMaskTexturePath = discardMaskTexturePath;
-                meshFound->mTextureDetailsList[index].discardMaskTextureUnit = textureUnitIndex;
+            std::cout << "SUCCESS : TEXTURE LOADED - [" << discardMaskTexturePath << "]" << std::endl;
 
-                break;
-            }
+            this->TexturePathList.push_back(discardMaskTexturePath);
         }
 
-        // Incrementing the Texture Unit 
-        textureUnitIndex++;
+        else
+        {
+            std::cout << "ERROR : LOADING TEXTURE FAILED - [" << discardMaskTexturePath << "]" << std::endl;
 
-        if (textureUnitIndex >= 30) // Maintaining 30 as the threshold for the Texture Unit count
-            textureUnitIndex = 0;
-
+            return;
+        }
     }
 
-    else
-        std::cout << "ERROR : Loading texture failed - [" << discardMaskTexturePath << "]" << std::endl;
+    for (int index = 0; index < meshTexture->mTextureDetailsList.size(); index++)
+    {
+        if (meshTexture->mTextureDetailsList[index].textureName == textureName)
+        {
+            meshTexture->mTextureDetailsList[index].discardMaskTexturePath = discardMaskTexturePath;
+            meshTexture->mTextureDetailsList[index].discardMaskTextureUnit = textureUnitIndex;
+
+            break;
+        }
+    }
+
+    // Incrementing the Texture Unit 
+    textureUnitIndex++;
+
+    if (textureUnitIndex >= 30) // Maintaining 30 as the threshold for the Texture Unit count
+        textureUnitIndex = 0;
 }
 
 void cControlGameEngine::ChangeTextureRatios(std::string modelName, std::vector <float> textureRatio)
@@ -718,25 +876,6 @@ void cControlGameEngine::AdjustAlphaTransparency(std::string modelName, float al
         return;
 
     meshFound->alphaTransparency = alphaTransparencyLevel;
-
-    if (alphaTransparencyLevel)
-    {
-        if (!bTransparencyMeshAvailable)
-            bTransparencyMeshAvailable = true;
-    }
-    else
-    {
-        bool bTransparencyMesh = false;
-
-        for (cMesh* meshTransparency : TotalMeshList)
-        {
-            if (meshTransparency->alphaTransparency < 1.0f)
-                bTransparencyMesh = true;
-        }
-
-        if (!bTransparencyMesh && bTransparencyMeshAvailable)
-            bTransparencyMeshAvailable = false;
-    }
 }
 
 void cControlGameEngine::UseDiscardMaskTexture(GLuint shaderProgramID, GLint bUseDiscardMaskTexture_UL, std::string texturePath, int textureUnit)
@@ -751,6 +890,17 @@ void cControlGameEngine::UseDiscardMaskTexture(GLuint shaderProgramID, GLint bUs
 
     GLint maskSampler_UL = glGetUniformLocation(shaderProgramID, "maskSampler");
     glUniform1i(maskSampler_UL, textureUnit);
+}
+
+bool cControlGameEngine::IsTextureAlreadyLoaded(std::string texturePath)
+{
+    for (int index = 0; index < this->TexturePathList.size(); index++)
+    {
+        if (this->TexturePathList[index] == texturePath)
+            return false;
+    }
+
+    return true;
 }
 
 //-------------------------------------CUBE MAP CONTROLS----------------------------------------------------------------
@@ -806,7 +956,7 @@ void cControlGameEngine::DeleteCubeMap()
         for (cMesh* skyBox : TotalMeshList)
         {
             if (skyBox->bIsSkyBox)
-                DeleteMesh(skyBox->meshName);
+                DeleteMesh(skyBox->meshFileName);
         }
     }
 }
@@ -1102,7 +1252,7 @@ void cControlGameEngine::MakePhysicsHappen(sPhysicsProperties* physicsModel, std
 
     if (collisionType == "Plane" || collisionType == "Box")
     {
-        sModelDrawInfo* modelInfo = g_pFindModelInfoByFriendlyName(model2Name);
+        sModelDrawInfo* modelInfo = g_pFindModelInfoByFriendlyName(model2Mesh->meshFileName);
 
         //------------------------Plane Collision Check---------------------------------------------
         
@@ -1291,7 +1441,7 @@ void cControlGameEngine::AddVerticesToAABB(std::string modelName)
     //-------------------------------Checking Vertices in each AABB-------------------------------------------------------
 
     cMesh* currentMesh = g_pFindMeshByFriendlyName(modelName);
-    sModelDrawInfo* currentMeshModel = g_pFindModelInfoByFriendlyName(modelName);
+    sModelDrawInfo* currentMeshModel = g_pFindModelInfoByFriendlyName(currentMesh->meshFileName);
 
     if (currentMesh == NULL)
         return;
@@ -1361,7 +1511,7 @@ void cControlGameEngine::AddTrianglesToAABB(std::string modelName)
     //-------------------------------Checking Vertices in each AABB-------------------------------------------------------
 
     cMesh* currentMesh = g_pFindMeshByFriendlyName(modelName);
-    sModelDrawInfo* currentMeshModel = g_pFindModelInfoByFriendlyName(modelName);
+    sModelDrawInfo* currentMeshModel = g_pFindModelInfoByFriendlyName(currentMesh->meshFileName);
 
     if (currentMeshModel == NULL)
         return;
@@ -1459,9 +1609,10 @@ void cControlGameEngine::CreateVerletSoftBodyWithThread(std::string modelName, g
 
     meshFileNameNeeded->bIsSoftBody = true;
 
+    newSoftBody->meshName = meshFileNameNeeded->meshUniqueName;
     newSoftBody->acceleration = softbodyAcceleration;
 
-    if (mVAOManager->FindDrawInfoByModelName(meshFileNameNeeded->friendlyName, softBodyObjectDrawingInfo))
+    if (mVAOManager->FindDrawInfoByModelName(meshFileNameNeeded->meshUniqueName, softBodyObjectDrawingInfo))
     {
         //-----------------------------Apply matrix transformations-----------------------------------
 
@@ -1474,12 +1625,12 @@ void cControlGameEngine::CreateVerletSoftBodyWithThread(std::string modelName, g
         if (newSoftBody->CreateSoftBody(softBodyObjectDrawingInfo, meshFileNameNeeded->drawPosition, matTransform))
         {
             std::cout << std::endl;
-            std::cout << "SUCCESS : CREATED SOFT BODY FOR THE MODEL - [" << meshFileNameNeeded->meshName << "]" << std::endl;
+            std::cout << "SUCCESS : CREATED SOFT BODY FOR THE MODEL - [" << meshFileNameNeeded->meshFileName << "]" << std::endl;
         }
         else
         {
             std::cout << std::endl;
-            std::cout << "ERROR : UNABLE TO CREATE SOFT BODY FOR THE MODEL - [" << meshFileNameNeeded->meshName << "]" << std::endl;
+            std::cout << "ERROR : UNABLE TO CREATE SOFT BODY FOR THE MODEL - [" << meshFileNameNeeded->meshFileName << "]" << std::endl;
 
             return;
         }
@@ -1499,7 +1650,7 @@ void cControlGameEngine::CreateVerletSoftBodyWithThread(std::string modelName, g
     else
     {
         std::cout << std::endl;
-        std::cout << "ERROR : UNABLE TO FIND THE MODEL - [" << meshFileNameNeeded->meshName << "]" << std::endl;
+        std::cout << "ERROR : UNABLE TO FIND THE MODEL - [" << meshFileNameNeeded->meshFileName << "]" << std::endl;
     }
     
     //----------------Create debug spheres to preview vertex locations in 3d space----------------
@@ -1540,6 +1691,7 @@ void cControlGameEngine::CreateVerletSoftBody(std::string modelName, glm::vec3 s
 
     meshFileNameNeeded->bIsSoftBody = true;
 
+    newSoftBody->meshName = meshFileNameNeeded->meshUniqueName;
     newSoftBody->acceleration = softbodyAcceleration;
     newSoftBody->bApplyDampingEffect = bApplyDamping;
 
@@ -1555,7 +1707,7 @@ void cControlGameEngine::CreateVerletSoftBody(std::string modelName, glm::vec3 s
     else if (isCube)
         newSoftBody->bCubeEffect = isCube;
 
-    if (mVAOManager->FindDrawInfoByModelName(meshFileNameNeeded->friendlyName, softBodyObjectDrawingInfo))
+    if (mVAOManager->FindDrawInfoByModelName(meshFileNameNeeded->meshUniqueName, softBodyObjectDrawingInfo))
     {
         //-----------------------------Apply matrix transformations-----------------------------------
 
@@ -1568,12 +1720,12 @@ void cControlGameEngine::CreateVerletSoftBody(std::string modelName, glm::vec3 s
         if (newSoftBody->CreateSoftBody(softBodyObjectDrawingInfo, meshFileNameNeeded->drawPosition, matTransform))
         {
             std::cout << std::endl;
-            std::cout << "SUCCESS : CREATED SOFT BODY FOR THE MODEL - [" << meshFileNameNeeded->meshName << "]" << std::endl;
+            std::cout << "SUCCESS : CREATED SOFT BODY FOR THE MODEL - [" << meshFileNameNeeded->meshFileName << "]" << std::endl;
         }
         else
         {
             std::cout << std::endl;
-            std::cout << "ERROR : UNABLE TO CREATE SOFT BODY FOR THE MODEL - [" << meshFileNameNeeded->meshName << "]" << std::endl;
+            std::cout << "ERROR : UNABLE TO CREATE SOFT BODY FOR THE MODEL - [" << meshFileNameNeeded->meshFileName << "]" << std::endl;
 
             return;
         }
@@ -1581,7 +1733,7 @@ void cControlGameEngine::CreateVerletSoftBody(std::string modelName, glm::vec3 s
     else
     {
         std::cout << std::endl;
-        std::cout << "ERROR : UNABLE TO FIND THE MODEL - [" << meshFileNameNeeded->meshName << "]" << std::endl;
+        std::cout << "ERROR : UNABLE TO FIND THE MODEL - [" << meshFileNameNeeded->meshFileName << "]" << std::endl;
     }
 
     //----------------Create debug spheres to preview vertex locations in 3d space----------------
@@ -1593,7 +1745,7 @@ void cControlGameEngine::CreateVerletSoftBody(std::string modelName, glm::vec3 s
         newSoftBody->bEnableDebugSphere = true;
         newSoftBody->debugSpheresScaleValue = 0.25f;
         newSoftBody->debugSpheresColor = glm::vec4(0.1, 0.1, 0.1, 1.0);
-        newSoftBody->debugModelName = "DebugSphere_" + meshFileNameNeeded->friendlyName;
+        newSoftBody->debugModelName = "DebugSphere_" + meshFileNameNeeded->meshUniqueName;
 
         std::vector < glm::vec3 > addPositions;
 
@@ -1612,7 +1764,7 @@ void cControlGameEngine::ApplyRandomBracingToSoftBody(std::string modelName, uns
 {
     for (int index = 0; index < SoftBodyList.size(); index++)
     {
-        if (SoftBodyList[index]->mModelVertexInfo.friendlyName == modelName)
+        if (SoftBodyList[index]->meshName == modelName)
             SoftBodyList[index]->CreateRandomBracing(bracesCount, distanceBetweenVertices);
     }
 }
@@ -1621,7 +1773,7 @@ void cControlGameEngine::ApplyWheelBracingToSoftBody(std::string modelName)
 {
     for (int index = 0; index < SoftBodyList.size(); index++)
     {
-        if (SoftBodyList[index]->mModelVertexInfo.friendlyName == modelName)
+        if (SoftBodyList[index]->meshName == modelName)
             SoftBodyList[index]->CreateWheelBracing();
     }
 }
@@ -1644,7 +1796,7 @@ void cControlGameEngine::UpdateSoftBodyTransformation()
             mSoftBodyThreadManager->MakeThreadsRunnable();
         }
 
-        mVAOManager->UpdateVertexBuffers(SoftBodyList[index]->mModelVertexInfo.friendlyName, SoftBodyList[index]->mModelVertexInfo, shaderProgramID);
+        mVAOManager->UpdateVertexBuffers(SoftBodyList[index]->meshName, SoftBodyList[index]->mModelVertexInfo, shaderProgramID);
 
         if (SoftBodyList[index]->bEnableDebugSphere)
         {
@@ -1662,7 +1814,7 @@ void cControlGameEngine::ApplyAccelerationToSoftBody(std::string modelName, glm:
 {
     for (int index = 0; index < SoftBodyList.size(); index++)
     {
-        if (SoftBodyList[index]->mModelVertexInfo.friendlyName == modelName)
+        if (SoftBodyList[index]->meshName == modelName)
             SoftBodyList[index]->ApplyDirectionAcceleration(acceleration);
     }
 }
@@ -1687,10 +1839,10 @@ void cControlGameEngine::ConnectTwoSoftBodies(std::string topSoftBodyName, std::
 
     for (int index = 0; index < SoftBodyList.size(); index++)
     {
-        if (SoftBodyList[index]->mModelVertexInfo.friendlyName == topSoftBodyMesh->friendlyName)
+        if (SoftBodyList[index]->meshName == topSoftBodyMesh->meshUniqueName)
             topSoftBody = SoftBodyList[index];
 
-        if (SoftBodyList[index]->mModelVertexInfo.friendlyName == bottomSoftBodyMesh->friendlyName)
+        if (SoftBodyList[index]->meshName == bottomSoftBodyMesh->meshUniqueName)
             bottomSoftBody = SoftBodyList[index];
     }
 
@@ -1720,7 +1872,7 @@ void cControlGameEngine::FixSoftBodyPosition(std::string softBodyMeshName, glm::
 
     for (int index = 0; index < SoftBodyList.size(); index++)
     {
-        if (SoftBodyList[index]->mModelVertexInfo.friendlyName == topSoftBodyMesh->friendlyName)
+        if (SoftBodyList[index]->meshName == topSoftBodyMesh->meshUniqueName)
             SoftBodyList[index]->AddTopConnectorNode(newNode);
     }
 }
@@ -1729,7 +1881,7 @@ void cControlGameEngine::ApplyImaginaryCenterNodeBracing(std::string modelName)
 {
     for (int index = 0; index < SoftBodyList.size(); index++)
     {
-        if (SoftBodyList[index]->mModelVertexInfo.friendlyName == modelName)
+        if (SoftBodyList[index]->meshName == modelName)
             SoftBodyList[index]->CreateImaginaryCenterNodeBracing();
     }
 }
@@ -1738,7 +1890,7 @@ glm::vec3 cControlGameEngine::GetCurrentSoftBodyPosition(std::string modelName)
 {
     for (int index = 0; index < SoftBodyList.size(); index++)
     {
-        if (SoftBodyList[index]->mModelVertexInfo.friendlyName == modelName)
+        if (SoftBodyList[index]->meshName == modelName)
             return SoftBodyList[index]->GetCurrentPos();
     }
 }
@@ -1796,8 +1948,8 @@ void cControlGameEngine::CreateDebugSpheres(std::string debugSphereName, std::ve
         std::cout << "ERROR : Unable to load debug sphere" << std::endl;
 
     newDebugSphereMesh->sceneId = meshSceneId;
-    newDebugSphereMesh->meshName = debugSphereFileName;
-    newDebugSphereMesh->friendlyName = debugSphereName;
+    newDebugSphereMesh->meshFileName = debugSphereFileName;
+    newDebugSphereMesh->meshUniqueName = debugSphereName;
     newDebugSphereMesh->bIsWireframe = true;
     newDebugSphereMesh->bDoNotLight = true;
     newDebugSphereMesh->bIsVisible = false;
@@ -1820,16 +1972,6 @@ void cControlGameEngine::UpdateDebugSpherePositions(std::string modelName, std::
 void cControlGameEngine::CreateANewScene(bool isTheMainScene, std::vector <glm::vec3> camPos, std::vector <glm::vec3> camTarget)
 {
     this->mSceneManager->CreateScene(isTheMainScene, camPos, camTarget);
-}
-
-void cControlGameEngine::AddMeshToExistingScene(unsigned int sceneNum, std::string modelName)
-{
-    cMesh* meshTobeAdded = g_pFindMeshByFriendlyName(modelName);
-
-    if (meshTobeAdded != NULL)
-        this->mSceneManager->AddMeshToScene(sceneNum, meshTobeAdded);
-    else
-        std::cout << "ERROR : MESH NAME PROVIDED DOES NOT EXIST" << std::endl;
 }
 
 void cControlGameEngine::MakeSceneIntoFBOTexture(unsigned int sceneNum, unsigned int width, unsigned int height)
@@ -1902,7 +2044,8 @@ int cControlGameEngine::InitializeGameEngine()
     if (mVAOManager == NULL)
         mVAOManager = new cVAOManager();
 
-    mVAOManager->setBasePath("Assets/Models");
+    mVAOManager->setBaseModelPath("Assets/Models");
+    mVAOManager->setBaseAnimationPath("Assets/Animations");
     
     if (mPhysicsManager == NULL)
         mPhysicsManager = new cPhysics();
@@ -1931,12 +2074,21 @@ int cControlGameEngine::InitializeGameEngine()
     if (mAnimationManager == NULL)
         mAnimationManager = new cAnimationSystem();
 
+    //-------------------------------------Camera Initialize----------------------------------------------------------------------
+
+    if (mCamManager == NULL)
+        mCamManager = new sCameraAttributes();
+
     //---------------------------------Scene Manager Initialize-------------------------------------------------------------------
     
     if (mSceneManager == NULL)
         mSceneManager = new cSceneManager();
 
     mSceneManager->InitializeSceneManager(this->mVAOManager, this->mTextureManager, this->mCubeMapManager, this->mLightManager);
+
+    //----------------------------------Initialize Mesh Count---------------------------------------------------------------------
+
+    this->InitializeMeshCount();
 
     return 0;
 }
@@ -1945,15 +2097,15 @@ void cControlGameEngine::RunGameEngine(GLFWwindow* window)
 {
     this->mLightManager->UpdateUniformValues(shaderProgramID);
 
-    this->mSceneManager->LoadScene(shaderProgramID, window, this->cameraEye, this->cameraTarget, this->bFreeFlowCamera);
+    this->mSceneManager->LoadScene(shaderProgramID, window, this->TotalMeshList, this->mCamManager->mCameraEye, this->mCamManager->mCameraTarget, this->mCamManager->bFreeFlowCamera, this->bApplyLOD);
 
     //----------------------------Title Screen Values---------------------------------------------
 
     std::stringstream ssTitle;
 
-    if (this->bEditorModeOn) // If Editor Mode is On
+    if (this->mCamManager->bEditorModeOn) // If Editor Mode is On
     {
-        if (this->bLightEditorMode)
+        if (this->mCamManager->bLightEditorMode)
         {
             //---------------------Light values displayed---------------------------
 
@@ -1990,15 +2142,15 @@ void cControlGameEngine::RunGameEngine(GLFWwindow* window)
             cMesh* meshObj = GetCurrentModelSelected();
 
             ssTitle << "Camera Eye(x, y, z) : ("
-                << cameraEye.x << ", "
-                << cameraEye.y << ", "
-                << cameraEye.z << ") | "
+                <<   this->mCamManager->mCameraEye.x << ", "
+                <<   this->mCamManager->mCameraEye.y << ", "
+                <<   this->mCamManager->mCameraEye.z << ") | "
                 << "Camera Target(x,y,z): ("
-                << cameraTarget.x << ", "
-                << cameraTarget.y << ", "
-                << cameraTarget.z << ") | Yaw/Pitch : ("
-                << yaw << ", " << pitch << ") | ModelName : "
-                << meshObj->friendlyName << " | ModelPos : ("
+                <<  this->mCamManager->mCameraTarget.x << ", "
+                <<  this->mCamManager->mCameraTarget.y << ", "
+                <<  this->mCamManager->mCameraTarget.z << ") | Yaw/Pitch : ("
+                << mCamManager->mYaw << ", " << mCamManager->mPitch << ") | ModelName : "
+                << meshObj->meshUniqueName << " | ModelPos : ("
                 << meshObj->drawPosition.x << ", "
                 << meshObj->drawPosition.y << ", "
                 << meshObj->drawPosition.z << ") | ModelScaleVal : "
@@ -2010,7 +2162,7 @@ void cControlGameEngine::RunGameEngine(GLFWwindow* window)
     }
 
     else
-        ssTitle << "MY GAME WORLD";
+        ssTitle << "ESCAPE WORLD";
 
     std::string theTitle = ssTitle.str();
 

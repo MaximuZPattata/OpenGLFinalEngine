@@ -14,7 +14,10 @@ public:
 
 	bool FindDrawInfoByModelName(std::string filename, sModelDrawInfo& drawInfo);
 
-	void setBasePath(std::string basePathWithoutSlash);
+	void setBaseModelPath(std::string basePathWithoutSlash);
+	void setBaseAnimationPath(std::string basePathWithoutSlash);
+
+	std::string getBaseModelPath();
 
 	bool UpdateVAOBuffers(std::string fileName, sModelDrawInfo& updatedDrawInfo, unsigned int shaderProgramID);
 
@@ -27,7 +30,9 @@ private:
 
 	std::map< std::string, sModelDrawInfo> m_map_ModelName_to_VAOID;
 
-	std::string m_basePathWithoutSlash;
+	std::string mBaseModelPath;
+
+	std::string mBaseAnimationPath;
 };
 
 #endif

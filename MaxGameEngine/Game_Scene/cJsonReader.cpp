@@ -113,21 +113,34 @@ bool cJsonReader::ReadScene(const std::string& filePath, std::vector <sSceneDeta
 			newModelDetails.modelName = modelDetails["ModelName"].GetString();
 			newModelDetails.modelFilePath = modelDetails["FilePath"].GetString();
 			newModelDetails.modelScaleValue = modelDetails["Scale"].GetFloat();
-			newModelDetails.applyBones = modelDetails["bApplyBones"].GetBool();
-			newModelDetails.meshLightsOn = modelDetails["bMeshLightsOn"].GetBool();
-			newModelDetails.wireframeModeOn = modelDetails["bWireframeModeOn"].GetBool();
-			newModelDetails.manualColors = modelDetails["bUseManualColors"].GetBool();
-			newModelDetails.useTextures = modelDetails["bUseTextures"].GetBool();
-			newModelDetails.isSkyBox = modelDetails["bIsSkyBox"].GetBool();
 			newModelDetails.modelPosition.x = modelDetails["Position"][0].GetFloat();
 			newModelDetails.modelPosition.y = modelDetails["Position"][1].GetFloat();
 			newModelDetails.modelPosition.z = modelDetails["Position"][2].GetFloat();
 			newModelDetails.modelOrientation.x = modelDetails["Rotation"][0].GetFloat();
 			newModelDetails.modelOrientation.y = modelDetails["Rotation"][1].GetFloat();
 			newModelDetails.modelOrientation.z = modelDetails["Rotation"][2].GetFloat();
+			newModelDetails.applyBones = modelDetails["bApplyBones"].GetBool();
+			newModelDetails.meshLightsOn = modelDetails["bMeshLightsOn"].GetBool();
+			newModelDetails.wireframeModeOn = modelDetails["bWireframeModeOn"].GetBool();
+			newModelDetails.manualColors = modelDetails["bUseManualColors"].GetBool();
+			newModelDetails.useTextures = modelDetails["bUseTextures"].GetBool();
+			newModelDetails.isSkyBox = modelDetails["bIsSkyBox"].GetBool();
+			newModelDetails.useLOD = modelDetails["bUseLOD"].GetBool();
 
 			if (!newModelDetails.isSkyBox)
 			{
+				if (newModelDetails.useLOD)
+				{
+					for (SizeType index = 0; index < modelDetails["LODInfo"].Size(); index++)
+					{
+						const Value& LODInfoList = modelDetails["LODInfo"][index];
+
+						newModelDetails.fileNameLOD.push_back(LODInfoList["FilePath"].GetString());
+						newModelDetails.minimumDistanceLOD.push_back(LODInfoList["MinimumDistance"].GetFloat());
+						newModelDetails.isDefaultLOD.push_back(LODInfoList["bIsDefault"].GetBool());
+					}
+				}
+
 				if (newModelDetails.manualColors)
 				{
 					newModelDetails.modelColorRGB.r = modelDetails["Color"][0].GetFloat();

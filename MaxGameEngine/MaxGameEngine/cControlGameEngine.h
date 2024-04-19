@@ -15,6 +15,7 @@
 #include "cSoftBodyThreaded.h"
 #include "cSceneManager.h"
 #include "cAnimationSystem.h"
+#include "sCameraAttributes.h"
 
 class cControlGameEngine
 {
@@ -23,15 +24,10 @@ private:
     int meshListIndex = 0;
     int lightListIndex = 0;
     int textureUnitIndex = 0;
+    int TOTAL_MESH_COUNT = 20'000;
 
-    bool bAnimationReversed = false;
-    bool bTransparencyMeshAvailable = false;
     bool bAABBGenerated = false;
-    bool bFreeFlowCamera = true;
-
-    glm::vec3 cameraEye = glm::vec3(0.0, 0.0f, 0.0f);
-    glm::vec3 cameraTarget = glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
+    bool bApplyLOD = true;
 
     GLuint shaderProgramID = 0;
     GLuint cDebugRenderer_vertex_buffer = 0;
@@ -49,13 +45,16 @@ private:
     cSoftBodyThreaded* mSoftBodyThreadManager = NULL;
     cVAOManager* mDebugRendererMeshManager = NULL;
     cVAOManager* mVAOManager = NULL;
+    sCameraAttributes* mCamManager = NULL;
 
     std::vector < sPhysicsProperties* > PhysicsModelList;
     std::vector < cMesh* > TotalMeshList;
-    std::vector < cMesh* > TotalDebugMeshList;
     std::vector < sModelDrawInfo* > MeshDrawInfoList;
+    std::vector < cMesh* > TotalDebugMeshList;
     std::vector < cAABB* > AABBList;
     std::vector < cSoftBody* > SoftBodyList;
+    std::vector < std::string > TexturePathList;
+    std::vector < std::string > MeshFilePathList;
 
     //std::map< unsigned int, cAABB* > AABBIdMap;
 
@@ -72,14 +71,7 @@ private:
 
 public:
     double deltaTime = 0.0f;
-
-    float yaw = -90.0f;   // Vertical axis(Left and Right)
-    float pitch = 0.0f;   // Horizontal axis(Up and Down)
-    float cameraHeight = 0.f;
-    float cameraDistance = 0.f;
-
-    bool bEditorModeOn = false;
-    bool bLightEditorMode = false;
+ 
 
     //-------------------COMMON FUNCTIONS--------------------------------------------------
 
@@ -88,18 +80,52 @@ public:
     //-------------------CAMERA CONTROLS---------------------------------------------------
 
     void MoveCameraPosition(float translate_x, float translate_y, float translate_z);
+
     void MoveCameraTarget(float translate_x, float translate_y, float translate_z);
+    
     void ShiftCameraView();
+    
     void UpdateThirdPersonCamera(const glm::vec3& playerPosition, float playerYaw, float playerPitch);
-
-    bool IsFreeFlowCamOn();
-
+    
+    void SetEditorMode(bool editorModeOn);
+    
+    void SetLightEditorMode(bool lightEditorModeOn);
+    
+    void SetCamYaw(float yaw);
+    
+    void SetCamPitch(float pitch);
+    
+    void SetCameraHeight(float camHeight);
+    
+    void SetCameraDistance(float camDistance);
+    
     glm::vec3 GetCurrentCameraPosition();
+    
     glm::vec3 GetCurrentCameraTarget();
+    
+    bool IsFreeFlowCamOn();
+    
+    bool GetEditorMode();
+    
+    bool GetLightEditorMode();
+    
+    float GetCamYaw();
+    
+    float GetCamPitch();
+    
+    float GetCamHeight();
+    
+    float GetCamDistance();
 
     //-------------------MESH CONTROLS-----------------------------------------------------
 
+    void InitializeMeshCount();
+
     void LoadModelsInto3DSpace(std::string filePath, std::string modelName, float initial_x, float initial_y, float initial_z);
+
+    sModelDrawInfo* CreateModelDrawInfo(std::string fileName, std::string fullFilePath);
+
+    void AddLODToMesh(std::string meshName, std::vector <std::string> filePathLOD, std::vector <float> minimumDistance, std::vector <bool> isDefaultLOD);
 
     void ChangeColor(std::string modelName, float r, float g, float b);
 
@@ -131,6 +157,10 @@ public:
 
     void ToggleMeshBoneWeightColor(std::string modelName);
 
+    void SetMeshSceneId(std::string modelName, unsigned int sceneId);
+
+    bool IsMeshFilePathAlreadyExisting(std::string filePath);
+
     cMesh* GetCurrentModelSelected();
 
     glm::quat GetModelRotationQuat(std::string modelName);
@@ -158,6 +188,8 @@ public:
     void LoopExistingAnimation(std::string modelName, std::string animationName);
 
     //------------------TEXTURE CONTROLS--------------------------------------------------
+
+    bool IsTextureAlreadyLoaded(std::string texturePath);
 
     void UseTextures(std::string modelName, bool applyTexture);
 
@@ -302,8 +334,6 @@ public:
     //----------------SCENE & FBO CONTROLS-------------------------------------------------
 
     void CreateANewScene(bool isTheMainScene, std::vector <glm::vec3> camPos, std::vector <glm::vec3> camTarget);
-
-    void AddMeshToExistingScene(unsigned int sceneNum, std::string modelName);
 
     void MakeSceneIntoFBOTexture(unsigned int sceneNum, unsigned int width, unsigned int height);
 

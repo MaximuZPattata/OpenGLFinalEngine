@@ -14,6 +14,23 @@ extern sPlayerAttributes playerAttributes;
 
 extern sMouseAttributes mouseAttributes;
 
+//--------------------------------------RESET KEYS------------------------------------------------------
+
+void ResetAllPlayerKeys()
+{
+    if (playerAttributes.mKeyPressedStateMap[GLFW_KEY_W] || playerAttributes.mKeyPressedStateMap[GLFW_KEY_S] ||
+        playerAttributes.mKeyPressedStateMap[GLFW_KEY_A] || playerAttributes.mKeyPressedStateMap[GLFW_KEY_D])
+    {
+        playerAttributes.mKeyPressedStateMap[GLFW_KEY_W] = false;
+        playerAttributes.mKeyPressedStateMap[GLFW_KEY_S] = false;
+        playerAttributes.mKeyPressedStateMap[GLFW_KEY_A] = false;
+        playerAttributes.mKeyPressedStateMap[GLFW_KEY_D] = false;
+    }
+
+    if(playerAttributes.mKeyPressedStateMap[GLFW_KEY_LEFT_SHIFT])
+        playerAttributes.mKeyPressedStateMap[GLFW_KEY_LEFT_SHIFT] = false;
+}
+
 //----------------------------------CALLBACK FUNCTIONS--------------------------------------------------
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -49,39 +66,62 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             jsonWriter.WriteDataToTextFile(gameEngine);
         }
 
-        if (key == GLFW_KEY_F1)
+        if (key == GLFW_KEY_F1 && action == GLFW_PRESS)
         {
-            gameEngine.bEditorModeOn = false;
+            gameEngine.ShiftCameraView();
+
+            if (gameEngine.IsFreeFlowCamOn()) // Make cursor visible and display the game world from the 1st camera showcase angle
+            {
+                CAMERA_POSITION = glm::vec3(0.0f, 50.0f, 300.0f);
+
+                gameEngine.MoveCameraTarget(0.0f, 0.0f, -1.0f);
+                gameEngine.SetCamPitch(-90.0f);
+                gameEngine.SetCamPitch(0.f);
+                mouseAttributes.resetMouseMoved();
+
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+                if (playerAttributes.bPlayerRunAnimationLooped || playerAttributes.bPlayerWalkAnimationLooped)
+                {
+                    playerAttributes.bPlayerWalkAnimationLooped = false;
+                    playerAttributes.bPlayerRunAnimationLooped = false;
+
+                    ResetAllPlayerKeys();
+                }
+
+                gameEngine.SetEditorMode(true);
+                gameEngine.SetLightEditorMode(false);
+            }
+            else // Make cursor invisible and recenter the cursor to the center of the screen
+            {
+                gameEngine.SetEditorMode(false);
+
+                int screenWidth, screenHeight;
+
+                glfwGetWindowSize(window, &screenWidth, &screenHeight);
+
+                glfwSetCursorPos(window, screenWidth / 2, screenHeight / 2);
+
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }
         }
 
-        if (key == GLFW_KEY_F2)
+        if (key == GLFW_KEY_F2 && action == GLFW_PRESS)
         {
-            gameEngine.bEditorModeOn = true;
-            gameEngine.bLightEditorMode = false;
-
-            if (!gameEngine.IsFreeFlowCamOn())
-                gameEngine.ShiftCameraView();
-        }
-
-        if (key == GLFW_KEY_F3)
-        {
-            gameEngine.bEditorModeOn = true;
-            gameEngine.bLightEditorMode = true;
-
-            if (!gameEngine.IsFreeFlowCamOn())
-                gameEngine.ShiftCameraView();
+            if(gameEngine.GetEditorMode())
+                gameEngine.SetLightEditorMode(!gameEngine.GetLightEditorMode());
         }
     }
 
     //-------------------------------------MESH CONTROL COMMANDS-------------------------------------------------------
 
-    if (gameEngine.bEditorModeOn && !gameEngine.bLightEditorMode)
+    if (gameEngine.GetEditorMode() && !gameEngine.GetLightEditorMode())
     {
         if ((mods & GLFW_MOD_CONTROL) == GLFW_MOD_CONTROL)
         {
            cMesh* controlMeshModel = gameEngine.GetCurrentModelSelected();
 
-            std::string currentModelName = controlMeshModel->friendlyName;
+            std::string currentModelName = controlMeshModel->meshUniqueName;
 
             glm::vec3 currentModelPosition = gameEngine.GetModelPosition(currentModelName);
 
@@ -148,7 +188,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     //--------------------------------------CONTROLS FOR LIGHTS--------------------------------------------------------
 
-    if (gameEngine.bEditorModeOn && gameEngine.bLightEditorMode)
+    if (gameEngine.GetEditorMode() && gameEngine.GetLightEditorMode())
     {
         int lightId = gameEngine.GetCurrentLightSelected();
 
@@ -282,8 +322,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             {
                 CAMERA_POSITION = glm::vec3(0.0f, 50.0f, 300.0f);
                 gameEngine.MoveCameraTarget(0.0f, 0.0f, -1.0f);
-                gameEngine.yaw = -90.0f;
-                gameEngine.pitch = 0.f;
+                gameEngine.SetCamYaw(-90.0f);
+                gameEngine.SetCamPitch(0.f);
                 mouseAttributes.resetMouseMoved();
             }
 
@@ -291,8 +331,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             {
                 CAMERA_POSITION = glm::vec3(-290.0f, 70.0f, 0.f);
                 gameEngine.MoveCameraTarget(1.f, -0.06f, 0.03f);
-                gameEngine.yaw = -358.241f;
-                gameEngine.pitch = -3.65f;
+                gameEngine.SetCamYaw(-358.241f);
+                gameEngine.SetCamPitch(-3.65f);
                 mouseAttributes.resetMouseMoved();
             }
 
@@ -300,8 +340,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             {
                 CAMERA_POSITION = glm::vec3(-4.25f, 55.f, -280.f);
                 gameEngine.MoveCameraTarget(-0.0115f, 0.009f, 1.0f);
-                gameEngine.yaw = -269.345f;
-                gameEngine.pitch = 0.5f;
+                gameEngine.SetCamYaw(-269.345f);
+                gameEngine.SetCamPitch(0.5f);
                 mouseAttributes.resetMouseMoved();
             }
 
@@ -309,8 +349,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             {
                 CAMERA_POSITION = glm::vec3(270.f, 53.f, 6.f);
                 gameEngine.MoveCameraTarget(-1.f, -0.016f, -0.035f);
-                gameEngine.yaw = -177.998f;
-                gameEngine.pitch = -0.9f;
+                gameEngine.SetCamYaw(-177.998f);
+                gameEngine.SetCamPitch(-0.9f);
                 mouseAttributes.resetMouseMoved();
             }
 
@@ -318,8 +358,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             {
                 CAMERA_POSITION = glm::vec3(3.05f, 895.f, 200.f);
                 gameEngine.MoveCameraTarget(-0.0012f, -0.98f, -0.22f);
-                gameEngine.yaw = -90.3f;
-                gameEngine.pitch = -77.55f;
+                gameEngine.SetCamYaw(-90.3f);
+                gameEngine.SetCamPitch(-77.55f);
                 mouseAttributes.resetMouseMoved();
             }
 
@@ -365,40 +405,8 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
     //---------------------------------NON-EDOTOR MODE COMMANDS----------------------------------------------------
 
-    if (!gameEngine.bEditorModeOn)
+    if (!gameEngine.GetEditorMode())
     {
-        //---------------------------------COMMON COMMANDS----------------------------------------------
-
-        if (key == GLFW_KEY_P && action == GLFW_PRESS) // Key to shift camera mode
-        {
-            gameEngine.ShiftCameraView();
-
-            if (gameEngine.IsFreeFlowCamOn()) // Make cursor visible and display the game world from the 1st camera showcase angle
-            {
-                CAMERA_POSITION = glm::vec3(0.0f, 50.0f, 300.0f);
-
-                gameEngine.MoveCameraTarget(0.0f, 0.0f, -1.0f);
-                gameEngine.yaw = -90.0f;
-                gameEngine.pitch = 0.f;
-                mouseAttributes.resetMouseMoved();
-
-                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
-                if (playerAttributes.mPlayerVelocity != glm::vec3(0.f))
-                    playerAttributes.mPlayerVelocity = glm::vec3(0.f);
-            }
-            else // Make cursor invisible and recenter the cursor to the center of the screen
-            {
-                int screenWidth, screenHeight;
-
-                glfwGetWindowSize(window, &screenWidth, &screenHeight);
-
-                glfwSetCursorPos(window, screenWidth / 2, screenHeight / 2);
-
-                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            }
-        }
-
         //---------------------------------PLAYER COMMANDS----------------------------------------------
 
         if (!gameEngine.IsFreeFlowCamOn()) // Keys to be pressed when in 3rd person camera mode
@@ -450,6 +458,91 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos)
 
     glfwGetWindowSize(window, &screenWidth, &screenHeight);
 
+    //if (mouseAttributes.bEnableMouseMovement)
+    //{
+    //    //------------------------Initializing Mouse Parameters--------------------------------------
+
+    //    glm::vec3 CAMERA_UP = glm::vec3(0.0f, 1.0f, 0.0f);
+    //    glm::vec3 CAMERA_POSITION = gameEngine.GetCurrentCameraPosition();
+
+    //    float xOffset = 0.0f;
+    //    float yOffset = 0.0f;
+
+    //    //----------------Calculating Cursor Restrictions in X and Y Plane---------------------------
+
+    //    if (xPos >= screenWidth - 1 || xPos <= 0) // Rotate Cam when mouse moves to the edge of the screen(left or right)
+    //    {
+    //        xOffset = 0.0f;
+
+    //        if (xPos <= 0)
+    //            xOffset = -10.0f;
+    //        else if (xPos >= screenWidth - 1)
+    //            xOffset = 10.0f;
+
+    //        gameEngine.yaw += mouseAttributes.mouseSensitivity * xOffset;
+    //    }
+
+    //    if (yPos >= screenHeight - 1 || yPos <= 20) // Rotate Cam when mouse moves to the edge of the screen(up or down)
+    //    {
+    //        yOffset = 0.0f;
+
+    //        if (yPos <= 20)
+    //            yOffset = 10.0f;
+    //        else if (yPos >= screenHeight - 1)
+    //            yOffset = -10.0f;
+
+    //        gameEngine.pitch += mouseAttributes.mouseSensitivity * yOffset;
+    //    }
+
+    //    //-----------------------Calculating the last X and Y Pos-------------------------------------
+
+    //    if (mouseAttributes.bMouseMoved)
+    //    {
+    //        mouseAttributes.freeCamLastX = xPos;
+    //        mouseAttributes.freeCamLastY = yPos;
+    //        mouseAttributes.bMouseMoved = false;
+    //    }
+
+    //    //-------------------Calculating offsets with XY Coordinates----------------------------------
+
+    //    xOffset = xPos - mouseAttributes.freeCamLastX;
+    //    yOffset = mouseAttributes.freeCamLastY - yPos; //Reversed Y
+
+    //    xOffset *= mouseAttributes.mouseSensitivity;
+    //    yOffset *= mouseAttributes.mouseSensitivity;
+
+    //    //----------------------Calculating Camera's Yaw and Pitch-----------------------------------
+
+    //    gameEngine.yaw += xOffset;
+    //    gameEngine.pitch += yOffset;
+
+    //    //-------------------------Restricting Vertical Movements------------------------------------
+
+    //    if (gameEngine.pitch > 90.0f)
+    //        gameEngine.pitch = 90.0f;
+
+    //    if (gameEngine.pitch < -90.0f)
+    //        gameEngine.pitch = -90.0f;
+
+    //    //----------------------------Calculating Camera Front---------------------------------------
+
+    //    glm::vec3 front;
+
+    //    front.x = cos(glm::radians(gameEngine.yaw)) * cos(glm::radians(gameEngine.pitch));
+    //    front.y = sin(glm::radians(gameEngine.pitch));
+    //    front.z = sin(glm::radians(gameEngine.yaw)) * cos(glm::radians(gameEngine.pitch));
+
+    //    glm::vec3 cameraFront = glm::normalize(front);
+
+    //    gameEngine.MoveCameraTarget(cameraFront.x, cameraFront.y, cameraFront.z);
+
+    //    //-------------------------Updating Last Mouse Position--------------------------------------
+
+    //    mouseAttributes.freeCamLastX = xPos;
+    //    mouseAttributes.freeCamLastY = yPos;
+    //}
+
+
     // Free-Flow Camera View
     if (gameEngine.IsFreeFlowCamOn())
     {
@@ -460,8 +553,10 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos)
             glm::vec3 CAMERA_UP = glm::vec3(0.0f, 1.0f, 0.0f);
             glm::vec3 CAMERA_POSITION = gameEngine.GetCurrentCameraPosition();
 
-            float xOffset = 0.0f;
-            float yOffset = 0.0f;
+            float xOffset = 0.f;
+            float yOffset = 0.f;
+            float camYaw = gameEngine.GetCamYaw();
+            float camPitch = gameEngine.GetCamPitch();
 
             //----------------Calculating Cursor Restrictions in X and Y Plane---------------------------
 
@@ -474,7 +569,7 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos)
                 else if (xPos >= screenWidth - 1)
                     xOffset = 10.0f;
 
-                gameEngine.yaw += mouseAttributes.mouseSensitivity * xOffset;
+                camYaw += mouseAttributes.mouseSensitivity * xOffset;
             }
 
             if (yPos >= screenHeight - 1 || yPos <= 20) // Rotate Cam when mouse moves to the edge of the screen(up or down)
@@ -486,7 +581,7 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos)
                 else if (yPos >= screenHeight - 1)
                     yOffset = -10.0f;
 
-                gameEngine.pitch += mouseAttributes.mouseSensitivity * yOffset;
+                camPitch += mouseAttributes.mouseSensitivity * yOffset;
             }
 
             //-----------------------Calculating the last X and Y Pos-------------------------------------
@@ -508,28 +603,30 @@ void mouse_callback(GLFWwindow* window, double xPos, double yPos)
 
             //----------------------Calculating Camera's Yaw and Pitch-----------------------------------
 
-            gameEngine.yaw += xOffset;
-            gameEngine.pitch += yOffset;
+            camYaw += xOffset;
+            camPitch += yOffset;
 
             //-------------------------Restricting Vertical Movements------------------------------------
 
-            if (gameEngine.pitch > 90.0f)
-                gameEngine.pitch = 90.0f;
+            if (camPitch > 90.0f)
+                camPitch = 90.0f;
 
-            if (gameEngine.pitch < -90.0f)
-                gameEngine.pitch = -90.0f;
+            if (camPitch < -90.0f)
+                camPitch = -90.0f;
 
             //----------------------------Calculating Camera Front---------------------------------------
 
             glm::vec3 front;
 
-            front.x = cos(glm::radians(gameEngine.yaw)) * cos(glm::radians(gameEngine.pitch));
-            front.y = sin(glm::radians(gameEngine.pitch));
-            front.z = sin(glm::radians(gameEngine.yaw)) * cos(glm::radians(gameEngine.pitch));
+            front.x = cos(glm::radians(camYaw)) * cos(glm::radians(camPitch));
+            front.y = sin(glm::radians(camPitch));
+            front.z = sin(glm::radians(camYaw)) * cos(glm::radians(camPitch));
 
             glm::vec3 cameraFront = glm::normalize(front);
 
             gameEngine.MoveCameraTarget(cameraFront.x, cameraFront.y, cameraFront.z);
+            gameEngine.SetCamYaw(camYaw);
+            gameEngine.SetCamPitch(camPitch);
 
             //-------------------------Updating Last Mouse Position--------------------------------------
 
@@ -588,8 +685,11 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
     // Scroll to zoom in 3rd person cam view
     if (!gameEngine.IsFreeFlowCamOn())
     {
-        gameEngine.cameraDistance -= yoffset * mouseAttributes.scrollSpeed;
-        gameEngine.cameraDistance = glm::clamp(gameEngine.cameraDistance, mouseAttributes.minZoomDistance, mouseAttributes.maxZoomDistance);
+        float camDistance = gameEngine.GetCamDistance();
+        camDistance -= yoffset * mouseAttributes.scrollSpeed;
+        camDistance = glm::clamp(camDistance, mouseAttributes.minZoomDistance, mouseAttributes.maxZoomDistance);
+
+        gameEngine.SetCameraDistance(camDistance);
     }
 }
 

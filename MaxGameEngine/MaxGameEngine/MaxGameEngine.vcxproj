@@ -177,8 +177,10 @@
     <ClInclude Include="KeyFrames.h" />
     <ClInclude Include="OpenGLCommon.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="sCameraAttributes.h" />
     <ClInclude Include="sModelDrawInfo.h" />
     <ClInclude Include="sPhysicsProperties.h" />
+    <ClInclude Include="sSceneDrawThread.h" />
     <ClInclude Include="TextureManager\C24BitBMPpixel.h" />
     <ClInclude Include="TextureManager\cBasicTextureManager.h" />
     <ClInclude Include="TextureManager\CTextureFromBMP.h" />
@@ -211,8 +213,14 @@
     </ClCompile>
     <ClCompile Include="sModelDrawInfo.cpp" />
     <ClCompile Include="sPhysicsProperties.cpp" />
-    <ClCompile Include="TextureManager\C24BitBMPpixel.cpp" />
-    <ClCompile Include="TextureManager\cBasicTextureManager.cpp" />
+    <ClCompile Include="TextureManager\C24BitBMPpixel.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="TextureManager\cBasicTextureManager.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="TextureManager\CTextureFromBMP.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>

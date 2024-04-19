@@ -13,6 +13,14 @@
 //	BACK_LEFT
 //};
 
+enum class ePlayerState
+{
+	DEFAULT_STATE,
+	SHIELD_STATE,
+	ITEM_PICKUP_STATE,
+	CARRYING_TORCH_STATE
+};
+
 struct sPlayerAttributes
 {
 	std::string mPlayerModelName = "";
@@ -37,9 +45,10 @@ struct sPlayerAttributes
 
 	std::map<int, bool> mKeyPressedStateMap;
 
+	ePlayerState playerState = ePlayerState::DEFAULT_STATE;
+
 	void InitializePlayer(cControlGameEngine& gameEngine, std::string playerModelName, std::string idleAnimationName, std::string walkAnimationName,
 		std::string runAnimationName, float walkSpeed, float runSpeed, float rotationSpeed, float camHeight, float camDistance);
-
 	void AnimatePlayerWalk(cControlGameEngine& gameEngine);
 	void AnimatePlayerIdle(cControlGameEngine& gameEngine);
 	void AnimatePlayerRun(cControlGameEngine& gameEngine);

@@ -1,3 +1,19 @@
-﻿  glad.c
-  CTextureFromBMP.cpp
-  MaxGameEngine.vcxproj -> C:\Users\maxim\Git_Files\Engines\Sem_2\Final_Engine\x64\Debug\MaxGameEngine.lib
+﻿  cControlGameEngine.cpp
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\minwindef.h(130,1): warning C4005: 'APIENTRY': macro redefinition
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\Extern\include\glad\glad.h(32,1): message : see previous definition of 'APIENTRY'
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(215,107): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(931,21): warning C4305: 'return': truncation from 'int' to 'bool'
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(946,17): warning C4305: 'return': truncation from 'int' to 'bool'
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(973,66): warning C4267: '=': conversion from 'size_t' to 'unsigned int', possible loss of data
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(1185,68): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(1185,62): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(1185,57): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(1383,61): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(1503,64): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(1590,66): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
+  cSceneManager.cpp
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\minwindef.h(130,1): warning C4005: 'APIENTRY': macro redefinition
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\Extern\include\glad\glad.h(32,1): message : see previous definition of 'APIENTRY'
+  Generating Code...
+C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\MaxGameEngine\cControlGameEngine.cpp(1896): warning C4715: 'cControlGameEngine::GetCurrentSoftBodyPosition': not all control paths return a value
+  MaxGameEngine.vcxproj -> C:\Users\maxim\Git_Files\Engines\Final_Engine\OpenGLFinalEngine\MaxGameEngine\x64\Debug\MaxGameEngine.lib

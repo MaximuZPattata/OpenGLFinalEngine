@@ -51,6 +51,7 @@ public:
 	float softBodyScaleValue = 0.f;
 
 	std::string debugModelName = "";
+	std::string meshName = "";
 
 	glm::vec3 acceleration = glm::vec3(0.0f);
 

@@ -144,6 +144,7 @@
     <ClInclude Include="cHiResTimer.h" />
     <ClInclude Include="cJsonReader.h" />
     <ClInclude Include="cJsonWriter.h" />
+    <ClInclude Include="cMap.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="sMouseAttributes.h" />
     <ClInclude Include="sPlayerAttributes.h" />
@@ -152,6 +153,7 @@
     <ClCompile Include="cHiResTimer.cpp" />
     <ClCompile Include="cJsonReader.cpp" />
     <ClCompile Include="cJsonWriter.cpp" />
+    <ClCompile Include="cMap.cpp" />
     <ClCompile Include="dummy.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>

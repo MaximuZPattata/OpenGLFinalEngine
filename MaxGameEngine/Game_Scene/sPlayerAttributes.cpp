@@ -19,8 +19,8 @@ void sPlayerAttributes::InitializePlayer(cControlGameEngine& gameEngine, std::st
     this->mPlayerYaw = 0.f;
     this->mPlayerForward = glm::vec3(0.f, 0.f, 1.f);
 
-    gameEngine.cameraHeight = this->mPlayerPosition.y + camHeight;
-    gameEngine.cameraDistance = camDistance;
+    gameEngine.SetCameraHeight(this->mPlayerPosition.y + camHeight);
+    gameEngine.SetCameraDistance(camDistance);
 }
 
 void sPlayerAttributes::AnimatePlayerWalk(cControlGameEngine& gameEngine)
